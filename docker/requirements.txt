@@ -97,7 +97,7 @@ ssh-import-id==5.7
 terminado==0.12.1
 testpath==0.6.0
 threadpoolctl==3.1.0
-torch==1.4.0+cu101
+torch==2.8.0
 tornado==6.1
 tqdm==4.45.0
 traitlets==4.3.3
