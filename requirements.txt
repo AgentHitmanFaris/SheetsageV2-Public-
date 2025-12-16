@@ -1,0 +1,30 @@
+torch==2.5.1+cu121
+torchaudio==2.5.1+cu121
+torchvision==0.20.1+cu121
+--extra-index-url https://download.pytorch.org/whl/cu121
+
+# Core Application
+gradio==5.9.1
+numpy>=1.22
+scipy
+librosa
+pretty_midi
+matplotlib
+validators
+
+# Transcription Models
+basic-pitch==0.4.0
+piano_transcription_inference
+demucs
+transformers
+accelerate
+sentencepiece
+protobuf
+
+# Hardware Acceleration
+onnxruntime-gpu==1.23.2
+
+# Other dependencies
+requests
+tqdm
+pydub

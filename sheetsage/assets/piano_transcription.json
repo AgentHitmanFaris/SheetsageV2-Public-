@@ -1,0 +1,7 @@
+{
+    "PIANO_TRANSCRIPTION_MODEL": {
+        "url": "https://zenodo.org/record/4034264/files/CRNN_note_F1=0.9677_pedal_F1=0.9186.pth?download=1",
+        "path": "piano_transcription/CRNN_note_F1=0.9677_pedal_F1=0.9186.pth",
+        "checksum": "c3fa9730725bf4a762f1c14bc80cd5986eacda01b026f5a4a2525cd607876141"
+    }
+}
