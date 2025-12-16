@@ -20,8 +20,8 @@ Sheet Sage is an AI-powered tool that transcribes music audio into lead sheets (
 ### One-Click Setup
 1.  **Clone the Repository**:
     ```bash
-    git clone https://github.com/your-username/sheetsage.git
-    cd sheetsage
+    git clone https://github.com/AgentHitmanFaris/sheetsageV2.git
+    cd sheetsageV2
     ```
 
 2.  **Run the Setup Script**:
