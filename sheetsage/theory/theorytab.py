@@ -449,7 +449,12 @@ class TheorytabChord(_TheorytabNoteOrChord):
                 interval = key_scale_intervals[d_abs % 7]
                 interval += 12 * (d_abs // 7)
                 chord_degree_to_interval[d] = interval
-                # NOTE: Not sure if this is a bug in Hookpad or what?
+                # Hookpad does not explicitly distinguish between half-diminished and
+                # fully-diminished seventh chords for secondary leading-tone chords
+                # (vii/x). The logic above defaults to diatonic intervals, which in
+                # a Major context (used for secondary chords) yields half-diminished.
+                # However, secondary leading-tone chords are typically fully
+                # diminished (borrowed from harmonic minor). We enforce that here.
                 if d == 7 and chord["applied"] == 7:
                     chord_degree_to_interval[d] -= 1
 

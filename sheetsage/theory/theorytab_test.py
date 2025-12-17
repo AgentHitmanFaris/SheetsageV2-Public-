@@ -251,6 +251,19 @@ class TestTheorytab(unittest.TestCase):
         self.assertEqual(chord_v_of_v[1], (4, 3, 3)) # 7 chord
         self.assertEqual(chord_v_of_v.as_lily(ttk.as_key()), ("d", "7"))
 
+        # Applied (Secondary Leading Tone): vii/V (F#dim7 in key of C, targeting G)
+        # Root 5 (G) is V. vii/V is F# (Root 7 in G major).
+        # applied=7 (vii of...), root=5 (V).
+        vii_of_v = TheorytabChord(ttc, root=5, applied=7, type=7)
+        chord_vii_of_v = vii_of_v.as_chord(ttk)
+        # Target G (7). 7th degree of G Major is F# (6).
+        # Fully diminished 7th intervals: 3, 3, 3.
+        # F# -> A (3), A -> C (3), C -> Eb (3).
+        self.assertEqual(chord_vii_of_v[0], 6)  # F#
+        self.assertEqual(chord_vii_of_v[1], (3, 3, 3))  # dim7
+        # Lilypond name for dim7 is "dim7"
+        self.assertEqual(chord_vii_of_v.as_lily(ttk.as_key()), ("fis", "dim7"))
+
         # Borrowed Chords
         # iv in Major (Minor iv). Borrowed from minor.
         # root=4, type=5. borrowed="minor".
