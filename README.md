@@ -1,4 +1,4 @@
-# Sheet Sage - Audio to Lead Sheet Transcription
+# Sheet Sage - Audio to Lead Sheet Transcription V2
 
 Sheet Sage is an AI-powered tool that transcribes music audio into lead sheets (melody + chords) and MIDI files. It leverages multiple state-of-the-art models to provide high-quality transcriptions for various use cases.
 

@@ -4,6 +4,7 @@ import logging
 import pathlib
 import uuid
 import tempfile
+import urllib.parse
 import shutil
 import gradio as gr
 import matplotlib
@@ -75,12 +76,17 @@ def transcribe_audio_piano(audio_file, progress=gr.Progress()):
              if mixed_audio_path:
                   output_files_list.append(mixed_audio_path)
 
-        # Return consistent tuple: files, fig, synth, mix, orig, vocals, status
-        return output_files_list, None, synthesized_audio_path, mixed_audio_path, original_audio_segment_path, None, "Transcription successful!"
+        # Generator Mixer HTML
+        html_player = generate_mixer_html(
+             orig_path=audio_file,
+             synth_path=synthesized_audio_path
+        )
+
+        return output_files_list, None, html_player, "Transcription successful!"
 
     except Exception as e:
         logging.exception("Error during piano transcription")
-        return None, None, None, None, None, None, f"Error: {str(e)}"
+        return None, None, None, f"Error: {str(e)}"
 
 from sheetsage.config_manager import load_config, save_config
 
@@ -438,18 +444,169 @@ def transcribe_audio_lead_sheet(
         status = "Transcription successful!"
         if not any(f.endswith(".pdf") for f in output_files_list):
              status += " (PDF failed)"
-        if not any(f.endswith(".midi") for f in output_files_list):
-             status += " (MIDI failed)"
-        if synthesized_audio_path:
-             status += " (Audio synthesized)"
 
-        return output_files_list, fig, synthesized_audio_path, mixed_audio_path, original_audio_segment_path, demucs_vocals_path, status
+        # Generator Mixer HTML
+        html_player = generate_mixer_html(
+             orig_path=audio_path_or_url,
+             synth_path=synthesized_audio_path,
+             vocals_path=demucs_vocals_path
+        )
+        
+        status = "Transcription successful!"
+        if not any(f.endswith(".pdf") for f in output_files_list):
+             status += " (PDF failed)"
+
+        return output_files_list, fig, html_player, status
 
     except Exception as e:
         logging.exception("Error during transcription")
-        return None, None, None, None, None, None, f"Error: {str(e)}\n\nIf you see a 403 Forbidden error, the model files could not be downloaded."
+        return None, None, None, f"Error: {str(e)}"
 
-def transcribe_audio_basic_pitch(audio_file, progress=gr.Progress()):
+def generate_mixer_html(orig_path, synth_path, vocals_path=None):
+    """
+    Generates a custom HTML5 Audio Mixer for playing tracks in sync.
+    """
+    import uuid
+    player_id = f"mixer_{uuid.uuid4().hex[:8]}"
+    
+    def make_src(path):
+        if not path: return ""
+        s = str(path)
+        if s.startswith("http") or s.startswith("data:"): return s
+        # Local file: Normalize and Encode
+        s = s.replace("\\", "/")
+        encoded = urllib.parse.quote(s)
+        return f"/file={encoded}"
+
+    src_orig = make_src(orig_path)
+    src_synth = make_src(synth_path)
+    src_vocals = make_src(vocals_path)
+    
+    tracks_html = ""
+    controls_html = ""
+    js_refs = ""
+    js_sync = ""
+    
+    # Track 1: Original
+    if src_orig:
+        tracks_html += f'<audio id="{player_id}_orig" src="{src_orig}" preload="auto"></audio>'
+        controls_html += f"""
+        <div style="margin-bottom: 10px; display: flex; align-items: center;">
+            <span style="width: 80px; font-weight: bold;">Original</span>
+            <input type="range" id="{player_id}_vol_orig" min="0" max="1" step="0.01" value="0.6" style="flex-grow: 1; margin: 0 10px;">
+        </div>
+        """
+        js_refs += f'const aOrig = document.getElementById("{player_id}_orig");\n'
+    else:
+        js_refs += 'const aOrig = null;\n'
+
+    # Track 2: Synth
+    if src_synth:
+        tracks_html += f'<audio id="{player_id}_synth" src="{src_synth}" preload="auto"></audio>'
+        controls_html += f"""
+        <div style="margin-bottom: 10px; display: flex; align-items: center;">
+            <span style="width: 80px; font-weight: bold;">Synth</span>
+            <input type="range" id="{player_id}_vol_synth" min="0" max="1" step="0.01" value="0.8" style="flex-grow: 1; margin: 0 10px;">
+        </div>
+        """
+        js_refs += f'const aSynth = document.getElementById("{player_id}_synth");\n'
+    else:
+        js_refs += 'const aSynth = null;\n'
+
+    # Track 3: Vocals (Optional)
+    if src_vocals:
+        tracks_html += f'<audio id="{player_id}_vocals" src="{src_vocals}" preload="auto"></audio>'
+        controls_html += f"""
+        <div style="margin-bottom: 10px; display: flex; align-items: center;">
+            <span style="width: 80px; font-weight: bold;">Vocals</span>
+            <input type="range" id="{player_id}_vol_vocals" min="0" max="1" step="0.01" value="0.0" style="flex-grow: 1; margin: 0 10px;">
+        </div>
+        """
+        js_refs += f'const aVocals = document.getElementById("{player_id}_vocals");\n'
+    else:
+        js_refs += 'const aVocals = null;\n'
+
+    html = f"""
+    <div style="border: 1px solid #cbd5e0; padding: 15px; border-radius: 8px; background: #e2e8f0; color: #1a202c;">
+        {tracks_html}
+        
+        <div style="display: flex; gap: 10px; margin-bottom: 15px; align-items: center;">
+            <button id="{player_id}_btn" onclick="{player_id}_toggle()" style="padding: 10px 20px; font-size: 16px; font-weight: bold; cursor: pointer; background: #3182ce; color: white; border: none; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">▶ Play</button>
+            <div style="flex-grow: 1; display: flex; align-items: center;">
+                 <input type="range" id="{player_id}_seek" min="0" max="100" value="0" style="width: 100%; cursor: pointer;">
+            </div>
+        </div>
+
+        {controls_html}
+    </div>
+
+    <script>
+    (function() {{
+        setTimeout(function() {{
+            {js_refs}
+            const btn = document.getElementById("{player_id}_btn");
+            const slider = document.getElementById("{player_id}_seek");
+            
+            // Volume Handlers
+            if(aOrig && document.getElementById("{player_id}_vol_orig")) document.getElementById("{player_id}_vol_orig").oninput = (e) => aOrig.volume = e.target.value;
+            if(aSynth && document.getElementById("{player_id}_vol_synth")) document.getElementById("{player_id}_vol_synth").oninput = (e) => aSynth.volume = e.target.value;
+            if(aVocals && document.getElementById("{player_id}_vol_vocals")) document.getElementById("{player_id}_vol_vocals").oninput = (e) => aVocals.volume = e.target.value;
+
+            // Master Controller (Use Original as timing master if avail, else Synth)
+            const master = aOrig || aSynth || aVocals;
+            const slaves = [aOrig, aSynth, aVocals].filter(a => a && a !== master);
+
+            if (master) {{
+                // Slider Update
+                master.ontimeupdate = () => {{
+                    if(master.duration && !Number.isNaN(master.duration)) slider.value = (master.currentTime / master.duration) * 100;
+                }};
+                
+                // Seek Handler
+                slider.oninput = (e) => {{
+                    if(master.duration) {{
+                        const t = (e.target.value / 100) * master.duration;
+                        master.currentTime = t;
+                        slaves.forEach(s => s.currentTime = t);
+                    }}
+                }};
+                
+                // Sync on seek
+                master.onseeked = () => {{
+                     slaves.forEach(s => s.currentTime = master.currentTime);
+                }};
+                
+                // Play Toggle
+                window["{player_id}_toggle"] = function() {{
+                    if (master.paused) {{
+                        master.play().then(() => {{
+                             slaves.forEach(s => s.play().catch(e => console.log("Slave play error", e))); 
+                        }}).catch(e => console.error("Play failed", e));
+                        btn.innerText = "⏸ Pause";
+                    }} else {{
+                        master.pause();
+                        slaves.forEach(s => s.pause());
+                        btn.innerText = "▶ Play";
+                    }}
+                }};
+            }}
+        }}, 500);
+    }})();
+    </script>
+    """
+    return html
+
+def transcribe_audio_basic_pitch(
+    audio_file,
+    segment_start_hint=None,
+    segment_end_hint=None,
+    measures_per_chunk=8,
+    beats_per_measure=None,
+    beats_per_minute_hint=None,
+    generate_pdf=True, 
+    separate_vocals=False, 
+    progress=gr.Progress()
+):
     """
     Transcribes audio using Spotify's Basic Pitch (Melody) + Sheet Sage (Infrastructure).
     """
@@ -458,6 +615,11 @@ def transcribe_audio_basic_pitch(audio_file, progress=gr.Progress()):
     synthesized_audio_path = None
     mixed_audio_path = None
     original_audio_segment_path = None
+    target_audio_path = audio_file # Default to original
+    
+    # Import subprocess at top of function to avoid UnboundLocalError
+    import subprocess
+    import sys
 
     if not audio_file:
          return None, None, None, None, None, None, "Please upload an audio file."
@@ -467,6 +629,48 @@ def transcribe_audio_basic_pitch(audio_file, progress=gr.Progress()):
     progress(0, desc="Initializing...")
 
     try:
+        # Demucs Separation (if enabled)
+        if separate_vocals and audio_file:
+            try:
+                msg_demucs = "Separating vocals with Demucs (this may take a few minutes)..."
+                print(msg_demucs)
+                progress(0.1, desc=msg_demucs)
+                
+                # Create a local dir for separation
+                sep_out_dir = pathlib.Path(os.getcwd()) / "output" / "demucs" / uuid.uuid4().hex
+                sep_out_dir.mkdir(parents=True, exist_ok=True)
+                
+                # Run Demucs via command line
+                python_exe = os.path.join("python_embeded", "python.exe") if os.path.isdir("python_embeded") else "python"
+                
+                cmd_args = [
+                    python_exe, "-m", "demucs.separate",
+                    "-n", "htdemucs", # Fast and good
+                    "-o", str(sep_out_dir),
+                    str(audio_file)
+                ]
+                print(f"Running Demucs: {' '.join(cmd_args)}")
+                
+                proc = subprocess.run(cmd_args, shell=False, capture_output=True, text=True)
+                
+                if proc.returncode != 0:
+                     logging.error(f"Demucs failed: {proc.stderr}")
+                     print(f"Demucs failed: {proc.stderr}")
+                else:
+                     # Find the vocal track
+                     filename = pathlib.Path(audio_file).stem
+                     # Demucs output folder structure might vary slightly but usually:
+                     # htdemucs/filename/vocals.wav
+                     vocals_path = sep_out_dir / "htdemucs" / filename / "vocals.wav"
+                     if vocals_path.exists():
+                          print(f"Using separated vocals: {vocals_path}")
+                          target_audio_path = str(vocals_path)
+                     else:
+                          print(f"Warning: Vocals file not found at {vocals_path}")
+            except Exception as e:
+                logging.error(f"Demucs error: {e}")
+                print(f"Demucs error: {e}")
+
         # Prepare output directory
         base_temp_dir = pathlib.Path(os.getcwd()) / "output" / "basic_pitch"
         base_temp_dir.mkdir(parents=True, exist_ok=True)
@@ -476,13 +680,72 @@ def transcribe_audio_basic_pitch(audio_file, progress=gr.Progress()):
 
         output_midi_path = output_dir / "basic_pitch.midi"
 
-        # Run transcription (Now returns list of files: Ly, PDF, MIDI)
-        generated_files = transcribe_basic_pitch(
-            audio_file, 
-            str(output_midi_path),
-            status_callback=lambda s: progress(None, desc=s),
-            tqdm_func=progress.tqdm
+        # Run transcription via subprocess to avoid Gradio/Multiprocessing slowdowns
+        script_path = os.path.join(os.getcwd(), "scripts", "run_bp_inference.py")
+        python_exe = sys.executable
+        
+        cmd = [
+            python_exe, script_path,
+            "--audio_path", str(target_audio_path), # Use target (vocals or original)
+            "--output_midi_path", str(output_midi_path),
+            "--measures_per_chunk", str(measures_per_chunk)
+        ]
+        
+        # Add optional args
+        if segment_start_hint is not None:
+            cmd.extend(["--segment_start_hint", str(segment_start_hint)])
+        if segment_end_hint is not None:
+            cmd.extend(["--segment_end_hint", str(segment_end_hint)])
+        if beats_per_measure:
+            cmd.extend(["--beats_per_measure_hint", str(beats_per_measure)])
+        if beats_per_minute_hint:
+             cmd.extend(["--beats_per_minute_hint", str(beats_per_minute_hint)])
+        
+        if not generate_pdf:
+             cmd.append("--skip_pdf")
+             
+        logging.info(f"Running subprocess: {' '.join(cmd)}")
+             
+        logging.info(f"Running subprocess: {' '.join(cmd)}")
+        print(f"Running Basic Pitch in subprocess...")
+        
+        # Run and capture output
+        process = subprocess.Popen(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            encoding='utf-8', # Force UTF-8 reading
+            errors='replace', # Prevent crashing on bad chars
+            bufsize=1,
+            cwd=os.getcwd()
         )
+        
+        generated_files = []
+        
+        # Read output line by line
+        while True:
+            line = process.stdout.readline()
+            if not line and process.poll() is not None:
+                break
+            if line:
+                line = line.strip()
+                if line.startswith("STATUS:"):
+                    msg = line[len("STATUS:"):].strip()
+                    print(f"Subprocess: {msg}")
+                    progress(None, desc=msg)
+                elif line.startswith("JSON_RESULT:"):
+                    json_str = line[len("JSON_RESULT:"):].strip()
+                    generated_files = json.loads(json_str)
+                elif line.startswith("ERROR:"):
+                     logging.error(line)
+                     print(line)
+                else:
+                     # Normal log
+                     print(f"[BP]: {line}")
+
+        if process.returncode != 0:
+             raise Exception("Basic Pitch subprocess failed. Check console logs.")
         
         output_files_list.extend(generated_files)
 
@@ -507,12 +770,31 @@ def transcribe_audio_basic_pitch(audio_file, progress=gr.Progress()):
                  if mixed_audio_path:
                       output_files_list.append(mixed_audio_path)
 
-        # Return consistent tuple: files, fig, synth, mix, orig, vocals, status
-        return output_files_list, None, synthesized_audio_path, mixed_audio_path, original_audio_segment_path, None, "Basic Pitch transcription successful!"
+                 # Mix with original
+                 mixed_audio_path, original_audio_segment_path = create_mix(
+                      audio_file,
+                      synthesized_audio_path,
+                      output_dir
+                 )
+                 if mixed_audio_path:
+                      output_files_list.append(mixed_audio_path)
+
+        status_str = "Basic Pitch transcription finished successfully."
+        
+        # Generate Mixer HTML
+        vocals_track = target_audio_path if separate_vocals else None
+        
+        html_player = generate_mixer_html(
+            orig_path=audio_file,
+            synth_path=synthesized_audio_path,
+            vocals_path=vocals_track
+        )
+
+        return output_files_list, None, html_player, status_str
 
     except Exception as e:
         logging.exception("Error during basic pitch transcription")
-        return None, None, None, None, None, None, f"Error: {str(e)}"
+        return None, None, None, f"Error: {str(e)}"
 
 # Rename for backward compatibility or simple renaming
 transcribe_audio = transcribe_audio_lead_sheet
@@ -534,12 +816,23 @@ def unified_transcriber(
     detect_harmony,
     legacy_behavior,
     separate_vocals,
+    generate_pdf, # New argument
     progress=gr.Progress()
 ):
     if mode == "Piano (Polyphonic)":
         return transcribe_audio_piano(audio_file, progress=progress)
     elif mode == "Basic Pitch (Polyphonic)":
-        return transcribe_audio_basic_pitch(audio_file, progress=progress)
+        return transcribe_audio_basic_pitch(
+            audio_file,
+            segment_start_hint=segment_start_hint,
+            segment_end_hint=segment_end_hint,
+            measures_per_chunk=measures_per_chunk,
+            beats_per_measure=beats_per_measure,
+            beats_per_minute_hint=beats_per_minute_hint,
+            generate_pdf=generate_pdf,
+            separate_vocals=separate_vocals, 
+            progress=progress
+        )
     else: # Lead Sheet (Standard)
         return transcribe_audio_lead_sheet(
             audio_file, audio_url, segment_start_hint, segment_end_hint,
@@ -582,13 +875,17 @@ with gr.Blocks(title="Sheet Sage", css=css) as demo:
                         info="Select the transcription model suitable for your audio."
                     )
                     
-                    # Lead Sheet Settings Group
-                    with gr.Group(visible=True) as lead_sheet_options:
-                        gr.Markdown("### 3. Advanced Settings")
+                    # === Shared Options Group (Visible for Lead Sheet + Basic Pitch) ===
+                    with gr.Group(visible=True) as shared_options:
+                        gr.Markdown("### 3. Settings")
                         with gr.Row():
                              separate_vocals = gr.Checkbox(label="Separate Vocals (Demucs)", value=True, info="Recommended for songs with vocals.")
-                        
-                        with gr.Accordion("Fine-Tuning", open=False):
+                             generate_pdf = gr.Checkbox(label="Generate Sheet Music PDF", value=True, info="If unchecked, skips PDF formatting (Faster).")
+
+                    # === Lead Sheet Specific (Visible ONLY for Lead Sheet) ===
+                    with gr.Group(visible=True) as lead_sheet_options:
+                        # gr.Markdown("(Advanced Fine-Tuning)")
+                        with gr.Accordion("Fine-Tuning (Lead Sheet)", open=False):
                             with gr.Row():
                                 segment_start_hint = gr.Number(
                                     label="Start Time (s)",
@@ -630,7 +927,7 @@ with gr.Blocks(title="Sheet Sage", css=css) as demo:
                                     step=0.05,
                                     value=0.5,
                                     label="Harmony Threshold",
-                                    info="Confidence threshold for chord detection. Higher values result in fewer changes."
+                                    info="Confidence threshold for chord detection."
                                 )
 
                             with gr.Row():
@@ -638,12 +935,12 @@ with gr.Blocks(title="Sheet Sage", css=css) as demo:
                                     choices=[3, 4],
                                     label="Beats Per Measure",
                                     value=None,
-                                    info="Hint for the time signature (e.g., 3 for 3/4, 4 for 4/4)."
+                                    info="Hint for the time signature."
                                 )
                                 beats_per_minute_hint = gr.Number(
                                     label="BPM Hint",
                                     value=None,
-                                    info="Hint for the tempo. Useful if the automatic detection is off."
+                                    info="Hint for the tempo."
                                 )
 
                             measures_per_chunk = gr.Slider(
@@ -652,26 +949,40 @@ with gr.Blocks(title="Sheet Sage", css=css) as demo:
                                 step=1,
                                 value=8,
                                 label="Measures Per Chunk",
-                                info="Number of measures processed at once. Lower values save memory; higher values may improve context."
+                                info="Number of measures processed at once."
                             )
                             segment_hints_are_downbeats = gr.Checkbox(
                                 label="Start/End align with Downbeats",
                                 value=False,
-                                info="If checked, assumes the provided start/end times correspond exactly to the first beat of a measure (downbeat). Helps with grid alignment."
+                                info="Assumes start/end times correspond to downbeats."
                             )
                             legacy_behavior = gr.Checkbox(
                                 label="Legacy Behavior",
                                 value=False,
-                                info="Use the older alignment algorithm (fixed chunk size). Try this if the new one fails."
+                                info="Use the older alignment algorithm."
                             )
 
-                    submit_btn = gr.Button("Transcribe", variant="primary", size="lg")
+                    with gr.Row():
+                         submit_btn = gr.Button("Transcribe", variant="primary", size="lg", scale=2)
+                         stop_btn = gr.Button("Stop / Cancel", variant="stop", scale=1)
                     
                     # Visibility Logic
                     def update_visibility(selected_mode):
-                        return gr.Group(visible=(selected_mode == "Lead Sheet (Standard)"))
+                        # Shared: Visible for Lead Sheet OR Basic Pitch
+                        show_shared = (selected_mode in ["Lead Sheet (Standard)", "Basic Pitch (Polyphonic)"])
+                        # Advanced: Visible ONLY for Lead Sheet
+                        show_advanced = (selected_mode == "Lead Sheet (Standard)")
+                        
+                        return [
+                            gr.Group(visible=show_shared),
+                            gr.Group(visible=show_advanced)
+                        ]
                     
-                    mode.change(fn=update_visibility, inputs=mode, outputs=lead_sheet_options)
+                    mode.change(
+                        fn=update_visibility, 
+                        inputs=mode, 
+                        outputs=[shared_options, lead_sheet_options]
+                    )
 
                 with gr.Column(scale=1):
                     gr.Markdown("### Output")
@@ -679,17 +990,8 @@ with gr.Blocks(title="Sheet Sage", css=css) as demo:
                     output_files = gr.Files(label="Download Results", visible=True, file_types=[ ".pdf", ".midi", ".ly", ".wav"])
 
                     with gr.Accordion("Preview", open=True):
-                         piano_roll_plot = gr.Plot(label="Piano Roll Visualization (Lead Sheet Only)")
-                         
-                         with gr.Tabs():
-                            with gr.TabItem("Mixed Overlay"):
-                                 audio_output_mix = gr.Audio(label="Mixed (Original + Notes)", interactive=False)
-                            with gr.TabItem("Synthesized"):
-                                 audio_output_synth = gr.Audio(label="Notes Only", interactive=False)
-                            with gr.TabItem("Original Segment"):
-                                 audio_output_orig = gr.Audio(label="Original Sound", interactive=False)
-                            with gr.TabItem("Separated Vocals (Demucs)"):
-                                 audio_output_vocals = gr.Audio(label="Vocals", interactive=False)
+                         piano_roll_plot = gr.Plot(label="Piano Roll Visualization")
+                         html_player = gr.HTML(label="Multi-Track Mixer")
 
             submit_event = submit_btn.click(
                 unified_transcriber,
@@ -699,10 +1001,12 @@ with gr.Blocks(title="Sheet Sage", css=css) as demo:
                     segment_start_hint, segment_end_hint, 
                     measures_per_chunk, segment_hints_are_downbeats, beats_per_measure,
                     beats_per_minute_hint, melody_threshold, harmony_threshold,
-                    detect_melody, detect_harmony, legacy_behavior, separate_vocals
+                    detect_melody, detect_harmony, legacy_behavior, separate_vocals,
+                    generate_pdf
                 ],
-                outputs=[output_files, piano_roll_plot, audio_output_synth, audio_output_mix, audio_output_orig, audio_output_vocals, status_msg],
+                outputs=[output_files, piano_roll_plot, html_player, status_msg],
             )
+            stop_btn.click(fn=None, inputs=None, outputs=None, cancels=[submit_event])
 
         # Settings Tab
         with gr.TabItem("Settings"):

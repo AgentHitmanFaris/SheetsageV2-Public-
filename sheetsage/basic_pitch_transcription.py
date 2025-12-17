@@ -5,7 +5,14 @@ import uuid
 import tempfile
 import numpy as np
 import pretty_midi
-from basic_pitch.inference import predict_and_save, ICASSP_2022_MODEL_PATH
+
+import os
+
+# Optimize ONNX Runtime initialization
+os.environ["BASIC_PITCH_USE_ONNX"] = "1"
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
+os.environ["ORTSESS_OPT_LEVEL"] = "99" # Enable all optimizations
+
 
 from sheetsage.infer import sheetsage, Status
 from sheetsage.theory.internal import Melody, Note
@@ -24,6 +31,7 @@ def transcribe_basic_pitch(audio_path, output_midi_path,
                            min_note_length=58,
                            min_freq=None,
                            max_freq=None,
+                           skip_pdf_generation=False,
                            status_callback=lambda s: None,
                            tqdm_func=lambda x: x):
     """
@@ -32,16 +40,12 @@ def transcribe_basic_pitch(audio_path, output_midi_path,
     Args:
         audio_path (str): Path to audio file.
         output_midi_path (str): Path to save final MIDI. (This function also generates PDF/Ly in the same dir)
+        skip_pdf_generation (bool): If True, skips LilyPond/PDF generation.
         ... options ...
         tqdm_func (callable): Function to wrap iterables for progress bars (e.g. tqdm or gradio.Progress.tqdm).
     """
     logging.info(f"Starting Basic Pitch + Sheet Sage Lead Sheet generation for {audio_path}")
 
-	# Override TensorFlow to use ONNX if available for Basic Pitch
-    import os
-    os.environ["BASIC_PITCH_USE_ONNX"] = "1"
-    os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3" # Suppress TF logging
-    
      # Print Hardware Info for User
     try:
         import onnxruntime as ort
@@ -62,10 +66,18 @@ def transcribe_basic_pitch(audio_path, output_midi_path,
     # Adapter for Sheet Sage status enum to string callback
     def ss_status_adapter(s):
         if status_callback:
-            status_callback(f"Sheet Sage: {s.name.replace('_', ' ').title()}")
+            # s.name is e.g. 'DETECTING_BEATS'
+            msg = f"Sheet Sage: {s.name.replace('_', ' ').title()}"
+            logging.info(msg)
+            status_callback(msg)
 
     # We need to capture the intermediates
+    import time
+    ss_start = time.time()
     try:
+        # NOTE: We disable the Gradio tqdm here (pass lambda x: x) because generally SheetSage 
+        # infrastructure steps can be granular and updating the UI over websockets too frequently 
+        # causes massive slowdowns (e.g. 2m vs 30s).
         ss_result = sheetsage(
             audio_path_bytes_or_url=audio_path,
             segment_start_hint=segment_start_hint,
@@ -78,16 +90,25 @@ def transcribe_basic_pitch(audio_path, output_midi_path,
             detect_harmony=True,
             return_intermediaries=False,
             status_change_callback=ss_status_adapter,
-            tqdm=tqdm_func
+            tqdm=lambda x: x # Disable tqdm to avoid Gradio overhead
         )
         lead_sheet_base, segment_beats, segment_beats_times = ss_result
     except Exception as e:
         logging.error(f"Sheet Sage infrastructure failed: {e}")
         raise e
+    ss_end = time.time()
+    logging.info(f"Sheet Sage infrastructure completed in {ss_end - ss_start:.2f} seconds")
 
     # 2. Run Basic Pitch to get the raw notes
     logging.info("Running Basic Pitch for Melody...")
+    bp_start = time.time()
     if status_callback: status_callback("Transcribing Melody (Basic Pitch)... This may take a moment to load the model.")
+    
+    # Defer import to avoid interference with Sheet Sage
+    from basic_pitch.inference import predict_and_save, ICASSP_2022_MODEL_PATH
+    
+    bp_end_import = time.time()
+    logging.info(f"Basic Pitch Import took {bp_end_import - bp_start:.2f} seconds")
 
     output_dir = os.path.dirname(output_midi_path)
     # Use a temp directory for basic pitch output to avoid clutter naming issues
@@ -263,19 +284,24 @@ def transcribe_basic_pitch(audio_path, output_midi_path,
     output_filename = pathlib.Path(output_midi_path).stem
     
     # Lilypond
-    try:
-        lily = new_lead_sheet.as_lily()
-        ly_path = output_dir / f"output.ly"
-        with open(ly_path, "w") as f:
-            f.write(lily)
-            
-        # PDF
-        pdf_bytes = engrave(lily, out_format="pdf", transparent=False, trim=False, hide_footer=False)
-        pdf_path = output_dir / f"output.pdf"
-        with open(pdf_path, "wb") as f:
-            f.write(pdf_bytes)
-    except Exception as e:
-        logging.error(f"Engraving failed: {e}")
+    ly_path = None
+    pdf_path = None
+    if not skip_pdf_generation:
+        try:
+            lily = new_lead_sheet.as_lily()
+            ly_path = output_dir / f"output.ly"
+            with open(ly_path, "w") as f:
+                f.write(lily)
+                
+            # PDF
+            pdf_bytes = engrave(lily, out_format="pdf", transparent=False, trim=False, hide_footer=False)
+            pdf_path = output_dir / f"output.pdf"
+            with open(pdf_path, "wb") as f:
+                f.write(pdf_bytes)
+        except Exception as e:
+            logging.error(f"Engraving failed: {e}")
+    else:
+        logging.info("Skipping PDF generation as requested.")
         
     # Formatted MIDI (Lead Sheet style)
     try:
@@ -307,4 +333,11 @@ def transcribe_basic_pitch(audio_path, output_midi_path,
          # No, keep consistency.
          raise e
          
-    return [str(ly_path), str(pdf_path), str(output_midi_path), str(raw_midi_path)] if raw_midi_path else [str(ly_path), str(pdf_path), str(output_midi_path)]
+    output_files = []
+    if ly_path: output_files.append(str(ly_path))
+    if pdf_path: output_files.append(str(pdf_path))
+    if output_midi_path: output_files.append(str(output_midi_path))
+    if raw_midi_path: output_files.append(str(raw_midi_path))
+    
+    print("Basic Pitch transcription finished successfully.")
+    return output_files

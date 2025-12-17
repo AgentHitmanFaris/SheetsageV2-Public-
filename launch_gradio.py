@@ -2,6 +2,13 @@ import os
 import sys
 import shutil
 import tempfile
+import logging
+
+# Configure logging to stdout
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
 
 # Force temp directory to be local to the project
 local_temp_dir = os.path.join(os.getcwd(), "temp")
