@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v0.3.1] - 2025-12-17
+
+### Added
+- **Multi-Track Audio Mixer**: Replaced separate audio tabs with a single, interactive **HTML5 Audio Mixer**.
+    - **Features**: Simultaneous synchronized playback, individual volume sliders for Original, Synthesized, and Vocals, and a unified seek bar.
+    - **Fix**: Handles filenames with spaces correctly via URL encoding.
+- **Stop Button**: Added a dedicated **"Stop / Cancel"** button to the UI to immediately interrupt long-running transcription processes.
+- **Basic Pitch Mixer**: Basic Pitch mode now supports the full audio mixer, allowing you to blend the original track with the generated MIDI.
+
+### Changed
+- **UI Improvements**: Simplified "Basic Pitch" tab by hiding advanced settings by default.
+- **Return Signatures**: Unified the return values of all transcription functions to support the new Mixer interface.
+
+
 ## [v0.3.0] - 2025-12-16
 
 ### Added

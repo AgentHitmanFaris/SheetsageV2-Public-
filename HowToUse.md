@@ -61,6 +61,17 @@ After processing is finished:
     *   **output.midi**: The MIDI file of the transcription, which you can play in any MIDI player or DAW.
     *   **output.ly**: The LilyPond source file used to generate the PDF.
 
+### 5. Audio Preview (Multi-Track Mixer)
+
+The new **Multi-Track Mixer** allows you to audit the transcription accuracy in real-time.
+
+*   **Play/Pause**: Controls all tracks simultaneously.
+*   **Original**: Volume slider for the source audio.
+*   **Synth**: Volume slider for the generated piano/MIDI audio.
+*   **Vocals**: (If "Separate Vocals" was used) Volume slider for the isolated vocal track.
+
+Use the sliders to create your own mix (e.g., mute the original to hear only the notes, or blend them to check alignment).
+
 ## Troubleshooting Tips
 
 *   **"Segment end hint should be greater than start"**: Ensure your End Time is strictly larger than your Start Time. If you want to transcribe to the end, leave End Time empty.

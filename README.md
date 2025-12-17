@@ -8,6 +8,7 @@ Sheet Sage is an AI-powered tool that transcribes music audio into lead sheets (
 *   **Polyphonic Piano Transcription**: Uses ByteDance's **Piano Transcription with Pedals** model to transcribe complex piano performances into accurate MIDI.
 *   **Melody & Pitch Bend Support**: Captures expressive nuances like pitch bends and polyphony when using the Basic Pitch mode.
 *   **Vocal Separation**: Integrated **Demucs** support to isolate vocals before transcription for cleaner melody detection.
+*   **Multi-Track Mixer**: Interactive web-based audio mixer to preview results, seamlessly blending between Original Audio, Synthesized MIDI, and Separated Vocals.
 *   **GPU Acceleration**: Fully supports NVIDIA GPUs for fast inference using CUDA 12.1 and ONNX Runtime.
 
 ## Installation & Setup
