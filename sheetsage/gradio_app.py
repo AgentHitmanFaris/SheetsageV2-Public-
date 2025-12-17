@@ -598,14 +598,44 @@ with gr.Blocks(title="Sheet Sage", css=css) as demo:
                                  detect_harmony = gr.Checkbox(label="Detect Harmony", value=True)
                             
                             with gr.Row():
-                                melody_threshold = gr.Slider(minimum=0.0, maximum=1.0, step=0.05, value=0.5, label="Melody Threshold")
-                                harmony_threshold = gr.Slider(minimum=0.0, maximum=1.0, step=0.05, value=0.5, label="Harmony Threshold")
+                                melody_threshold = gr.Slider(
+                                    minimum=0.0,
+                                    maximum=1.0,
+                                    step=0.05,
+                                    value=0.5,
+                                    label="Melody Threshold",
+                                    info="Confidence threshold for melody detection. Higher values result in fewer, more certain notes."
+                                )
+                                harmony_threshold = gr.Slider(
+                                    minimum=0.0,
+                                    maximum=1.0,
+                                    step=0.05,
+                                    value=0.5,
+                                    label="Harmony Threshold",
+                                    info="Confidence threshold for chord detection. Higher values result in fewer changes."
+                                )
 
                             with gr.Row():
-                                beats_per_measure = gr.Dropdown(choices=[3, 4], label="Beats Per Measure", value=None)
-                                beats_per_minute_hint = gr.Number(label="BPM Hint", value=None)
+                                beats_per_measure = gr.Dropdown(
+                                    choices=[3, 4],
+                                    label="Beats Per Measure",
+                                    value=None,
+                                    info="Hint for the time signature (e.g., 3 for 3/4, 4 for 4/4)."
+                                )
+                                beats_per_minute_hint = gr.Number(
+                                    label="BPM Hint",
+                                    value=None,
+                                    info="Hint for the tempo. Useful if the automatic detection is off."
+                                )
 
-                            measures_per_chunk = gr.Slider(minimum=1, maximum=24, step=1, value=8, label="Measures Per Chunk")
+                            measures_per_chunk = gr.Slider(
+                                minimum=1,
+                                maximum=24,
+                                step=1,
+                                value=8,
+                                label="Measures Per Chunk",
+                                info="Number of measures processed at once. Lower values save memory; higher values may improve context."
+                            )
                             segment_hints_are_downbeats = gr.Checkbox(label="Start/End align with Downbeats", value=False)
                             legacy_behavior = gr.Checkbox(label="Legacy Behavior", value=False)
 
