@@ -89,4 +89,9 @@ if __name__ == "__main__":
         print("Warning: Torch not found. Hardware detection failed.")
 
     print("Access the interface at http://127.0.0.1:7860")
-    demo.queue().launch(server_name="127.0.0.1", server_port=7860, inbrowser=True)
+    demo.queue().launch(
+        server_name="127.0.0.1",
+        server_port=7860,
+        inbrowser=True,
+        allowed_paths=[os.getcwd()],
+    )
