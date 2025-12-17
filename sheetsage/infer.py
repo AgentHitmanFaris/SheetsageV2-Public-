@@ -766,9 +766,11 @@ def sheetsage(
         raise ValueError("Segment end hint should be greater than start hint")
     if measures_per_chunk <= 0:
         raise ValueError("Invalid measures per chunk specified")
+    if measures_per_chunk > 32:
+        raise ValueError("Sheet Sage can only transcribe up to 32 measures per chunk")
     if measures_per_chunk > 24:
-        # TODO: Allow 32 if time signature is 3/4??
-        raise ValueError("Sheet Sage can only transcribe 24 measures per chunk")
+        if beats_per_measure_hint == 4:
+            raise ValueError("For 4/4 time, max measures per chunk is 24")
     if beats_per_measure_hint is not None and beats_per_measure_hint not in [3, 4]:
         raise ValueError(
             "Currently, Sheet Sage only supports 4/4 and 3/4 time signatures"
@@ -821,6 +823,11 @@ def sheetsage(
     )
 
     # Identify suitable chunks for running through transcription model
+    if beats_per_measure * measures_per_chunk > 96:
+        raise ValueError(
+            f"Measures per chunk {measures_per_chunk} is too high for {beats_per_measure}/4 time signature (max beats per chunk is 96)"
+        )
+
     chunks_tertiaries = _split_into_chunks(
         tertiaries_times,
         measures_per_chunk,
