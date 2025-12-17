@@ -476,7 +476,7 @@ def generate_mixer_html(orig_path, synth_path, vocals_path=None):
         # Local file: Normalize and Encode
         s = s.replace("\\", "/")
         encoded = urllib.parse.quote(s)
-        return f"/file={encoded}"
+        return f"/gradio_api/file={encoded}"
 
     src_orig = make_src(orig_path)
     src_synth = make_src(synth_path)
