@@ -41,7 +41,7 @@
   },
   "TEST_FISHIN": {
     "path": "test/fishin.mp3",
-    "url": "https://freemusicarchive.org/track/09_Lets_Go_Fishin/download/",
-    "checksum": "3c84bcb51aa0d44601e82e328ce07f66949b79ed919ea07ed14aa27f50a09573"
+    "url": "https://github.com/librosa/librosa-test-data/raw/b49a879c3045ee5a54bacf62c7907915738e445d/test1_22050.mp3",
+    "checksum": "a2084c37c252a1de25586549ef0ab5c512f8e91a2c072d5a8941817d949996b2"
   }
 }
