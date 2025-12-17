@@ -590,12 +590,30 @@ with gr.Blocks(title="Sheet Sage", css=css) as demo:
                         
                         with gr.Accordion("Fine-Tuning", open=False):
                             with gr.Row():
-                                segment_start_hint = gr.Number(label="Start Time (s)", value=None, precision=1)
-                                segment_end_hint = gr.Number(label="End Time (s)", value=None, precision=1)
+                                segment_start_hint = gr.Number(
+                                    label="Start Time (s)",
+                                    value=None,
+                                    precision=1,
+                                    info="Start processing from this timestamp (in seconds)."
+                                )
+                                segment_end_hint = gr.Number(
+                                    label="End Time (s)",
+                                    value=None,
+                                    precision=1,
+                                    info="Stop processing at this timestamp (in seconds)."
+                                )
                             
                             with gr.Row():
-                                 detect_melody = gr.Checkbox(label="Detect Melody", value=True)
-                                 detect_harmony = gr.Checkbox(label="Detect Harmony", value=True)
+                                 detect_melody = gr.Checkbox(
+                                     label="Detect Melody",
+                                     value=True,
+                                     info="Enable melody transcription."
+                                 )
+                                 detect_harmony = gr.Checkbox(
+                                     label="Detect Harmony",
+                                     value=True,
+                                     info="Enable chord transcription."
+                                 )
                             
                             with gr.Row():
                                 melody_threshold = gr.Slider(
@@ -636,8 +654,16 @@ with gr.Blocks(title="Sheet Sage", css=css) as demo:
                                 label="Measures Per Chunk",
                                 info="Number of measures processed at once. Lower values save memory; higher values may improve context."
                             )
-                            segment_hints_are_downbeats = gr.Checkbox(label="Start/End align with Downbeats", value=False)
-                            legacy_behavior = gr.Checkbox(label="Legacy Behavior", value=False)
+                            segment_hints_are_downbeats = gr.Checkbox(
+                                label="Start/End align with Downbeats",
+                                value=False,
+                                info="If checked, assumes the provided start/end times correspond exactly to the first beat of a measure (downbeat). Helps with grid alignment."
+                            )
+                            legacy_behavior = gr.Checkbox(
+                                label="Legacy Behavior",
+                                value=False,
+                                info="Use the older alignment algorithm (fixed chunk size). Try this if the new one fails."
+                            )
 
                     submit_btn = gr.Button("Transcribe", variant="primary", size="lg")
                     
