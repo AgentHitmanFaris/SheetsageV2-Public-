@@ -42,7 +42,8 @@ def transcribe_audio_piano(audio_file, progress=gr.Progress()):
 
     try:
         # Prepare output directory
-        base_temp_dir = pathlib.Path(os.getcwd()) / "output" / "piano"
+        base_output_dir = pathlib.Path(current_config.get("output_dir", os.path.join(os.getcwd(), "output")))
+        base_temp_dir = base_output_dir / "piano"
         base_temp_dir.mkdir(parents=True, exist_ok=True)
         output_dir = base_temp_dir / uuid.uuid4().hex
         output_dir.mkdir(parents=True, exist_ok=True)
@@ -219,7 +220,6 @@ def transcribe_audio_lead_sheet(
     audio_url,
     segment_start_hint,
     segment_end_hint,
-    use_jukebox,
     measures_per_chunk,
     segment_hints_are_downbeats,
     beats_per_measure,
@@ -239,7 +239,6 @@ def transcribe_audio_lead_sheet(
     output_files_list = []
     fig = None
     synthesized_audio_path = None
-    mixed_audio_path = None
     mixed_audio_path = None
     original_audio_segment_path = None
     demucs_vocals_path = None
@@ -269,7 +268,8 @@ def transcribe_audio_lead_sheet(
                 import subprocess
                 
                 # Create a local dir for separation (Portable)
-                sep_out_dir = pathlib.Path(os.getcwd()) / "output" / "demucs" / uuid.uuid4().hex
+                base_output_dir = pathlib.Path(current_config.get("output_dir", os.path.join(os.getcwd(), "output")))
+                sep_out_dir = base_output_dir / "demucs" / uuid.uuid4().hex
                 sep_out_dir.mkdir(parents=True, exist_ok=True)
                 
                 # Run Demucs via command line (safest way to use the library)
@@ -307,7 +307,7 @@ def transcribe_audio_lead_sheet(
         device = "cuda" if torch.cuda.is_available() else "cpu"
         device_name = torch.cuda.get_device_name(0) if torch.cuda.is_available() else "CPU"
         msg_hw = f"Hardware: {device_name} ({device})"
-        msg_model = f"Model: {'Jukebox' if use_jukebox else 'SheetSage (Standard)'}"
+        msg_model = "Model: SheetSage (Standard)"
         
         logging.info(msg_hw)
         logging.info(msg_model)
@@ -315,14 +315,6 @@ def transcribe_audio_lead_sheet(
         print(msg_hw)
         print(msg_model)
         
-        if use_jukebox and torch.cuda.is_available():
-             vram = torch.cuda.get_device_properties(0).total_memory / 1e9
-             if vram < 11.0:
-                  warn = f"⚠️ WARNING: Low VRAM detected ({vram:.1f} GB). Jukebox mode typically requires >11 GB VRAM. This process may crash or freeze your system."
-                  print(warn)
-                  logging.warning(warn)
-                  gr.Warning(warn) # Gradio popup warning if supported in this version
-
         progress(0, desc="Initializing...")
 
         # Handle optional float/int inputs that might be None or 0
@@ -342,8 +334,6 @@ def transcribe_audio_lead_sheet(
             audio_path_harmony=audio_path_or_url,
             segment_start_hint=segment_start_hint,
             segment_end_hint=segment_end_hint,
-            # use_jukebox parameter removed from sheetsage()
-            # use_jukebox=use_jukebox, 
             measures_per_chunk=int(measures_per_chunk),
             segment_hints_are_downbeats=segment_hints_are_downbeats,
             beats_per_measure_hint=int(beats_per_measure) if beats_per_measure else None,
@@ -365,7 +355,8 @@ def transcribe_audio_lead_sheet(
         # Generate output files
         # Use tempfile.gettempdir() for cross-platform compatibility
         # Use temporary directory relative to project
-        base_temp_dir = pathlib.Path(os.getcwd()) / "output" / "leadsheet"
+        base_output_dir = pathlib.Path(current_config.get("output_dir", os.path.join(os.getcwd(), "output")))
+        base_temp_dir = base_output_dir / "leadsheet"
         base_temp_dir.mkdir(parents=True, exist_ok=True)
 
         output_dir = base_temp_dir / uuid.uuid4().hex
@@ -467,6 +458,7 @@ def generate_mixer_html(orig_path, synth_path, vocals_path=None):
     Generates a custom HTML5 Audio Mixer for playing tracks in sync.
     """
     import uuid
+    import json
     player_id = f"mixer_{uuid.uuid4().hex[:8]}"
     
     def make_src(path):
@@ -485,7 +477,6 @@ def generate_mixer_html(orig_path, synth_path, vocals_path=None):
     tracks_html = ""
     controls_html = ""
     js_refs = ""
-    js_sync = ""
     
     # Track 1: Original
     if src_orig:
@@ -624,6 +615,16 @@ def transcribe_audio_basic_pitch(
     if not audio_file:
          return None, None, None, None, None, None, "Please upload an audio file."
 
+    # Sanitize hints (Copy-pasted from Lead Sheet logic)
+    # Ensure float conversion if not None
+    segment_start_hint = float(segment_start_hint) if segment_start_hint is not None else None
+    segment_end_hint = float(segment_end_hint) if segment_end_hint is not None else None
+    
+    start_val = segment_start_hint if segment_start_hint is not None else 0.0
+    if segment_end_hint is not None and segment_end_hint <= start_val:
+        logging.warning(f"Ignoring invalid segment_end_hint ({segment_end_hint}) <= start ({start_val})")
+        segment_end_hint = None
+
     logging.info("Starting Basic Pitch Transcription")
     print(f"\n--- Starting Basic Pitch Transcription ---")
     progress(0, desc="Initializing...")
@@ -637,7 +638,8 @@ def transcribe_audio_basic_pitch(
                 progress(0.1, desc=msg_demucs)
                 
                 # Create a local dir for separation
-                sep_out_dir = pathlib.Path(os.getcwd()) / "output" / "demucs" / uuid.uuid4().hex
+                base_output_dir = pathlib.Path(current_config.get("output_dir", os.path.join(os.getcwd(), "output")))
+                sep_out_dir = base_output_dir / "demucs" / uuid.uuid4().hex
                 sep_out_dir.mkdir(parents=True, exist_ok=True)
                 
                 # Run Demucs via command line
@@ -672,7 +674,8 @@ def transcribe_audio_basic_pitch(
                 print(f"Demucs error: {e}")
 
         # Prepare output directory
-        base_temp_dir = pathlib.Path(os.getcwd()) / "output" / "basic_pitch"
+        base_output_dir = pathlib.Path(current_config.get("output_dir", os.path.join(os.getcwd(), "output")))
+        base_temp_dir = base_output_dir / "basic_pitch"
         base_temp_dir.mkdir(parents=True, exist_ok=True)
         output_dir = base_temp_dir / uuid.uuid4().hex
         output_dir.mkdir(parents=True, exist_ok=True)
@@ -770,15 +773,6 @@ def transcribe_audio_basic_pitch(
                  if mixed_audio_path:
                       output_files_list.append(mixed_audio_path)
 
-                 # Mix with original
-                 mixed_audio_path, original_audio_segment_path = create_mix(
-                      audio_file,
-                      synthesized_audio_path,
-                      output_dir
-                 )
-                 if mixed_audio_path:
-                      output_files_list.append(mixed_audio_path)
-
         status_str = "Basic Pitch transcription finished successfully."
         
         # Generate Mixer HTML
@@ -836,7 +830,6 @@ def unified_transcriber(
     else: # Lead Sheet (Standard)
         return transcribe_audio_lead_sheet(
             audio_file, audio_url, segment_start_hint, segment_end_hint,
-            False, # use_jukebox
             measures_per_chunk, segment_hints_are_downbeats, beats_per_measure,
             beats_per_minute_hint, melody_threshold, harmony_threshold,
             detect_melody, detect_harmony, legacy_behavior, separate_vocals,
@@ -851,7 +844,7 @@ h1 { text-align: center; color: #2d3748; }
 .footer { text-align: center; margin-top: 40px; font-size: 0.8em; color: #718096; }
 """
 
-with gr.Blocks(title="Sheet Sage", css=css) as demo:
+with gr.Blocks(title="Sheet Sage") as demo:
     gr.Markdown("# 🎼 Sheet Sage")
     gr.Markdown("### Audio to Lead Sheet Transcription", elem_classes=["description"])
 
@@ -964,7 +957,11 @@ with gr.Blocks(title="Sheet Sage", css=css) as demo:
 
                     with gr.Row():
                          submit_btn = gr.Button("Transcribe", variant="primary", size="lg", scale=2)
-                         stop_btn = gr.Button("Stop / Cancel", variant="stop", scale=1)
+                         cancel_btn = gr.Button("Cancel Task", variant="stop", scale=1)
+
+                    with gr.Row():
+                         restart_btn = gr.Button("Restart App", variant="secondary", scale=1)
+                         stop_app_btn = gr.Button("Stop App", variant="secondary", scale=1)
                     
                     # Visibility Logic
                     def update_visibility(selected_mode):
@@ -974,8 +971,8 @@ with gr.Blocks(title="Sheet Sage", css=css) as demo:
                         show_advanced = (selected_mode == "Lead Sheet (Standard)")
                         
                         return [
-                            gr.Group(visible=show_shared),
-                            gr.Group(visible=show_advanced)
+                            gr.update(visible=show_shared),
+                            gr.update(visible=show_advanced)
                         ]
                     
                     mode.change(
@@ -1006,7 +1003,129 @@ with gr.Blocks(title="Sheet Sage", css=css) as demo:
                 ],
                 outputs=[output_files, piano_roll_plot, html_player, status_msg],
             )
-            stop_btn.click(fn=None, inputs=None, outputs=None, cancels=[submit_event])
+            cancel_btn.click(fn=None, inputs=None, outputs=None, cancels=[submit_event])
+            
+            def restart_app():
+                import sys
+                import os
+                import subprocess
+                import platform
+                logging.info("Restarting application...")
+                
+                # Prepare command
+                startup_script = os.path.join(os.getcwd(), "run_local.bat")
+                if os.path.exists(startup_script):
+                    # Use cmd /c to run the batch file properly without shell=True if needed, 
+                    # but shell=True is simpler for batch files. 
+                    # We use CREATE_NEW_CONSOLE to detach.
+                    cmd = [startup_script, "--no-browser"]
+                    shell_cmd = True
+                else:
+                    cmd = [sys.executable] + sys.argv + ["--no-browser"]
+                    shell_cmd = False
+                
+                # Spawn new process
+                # CREATE_NEW_CONSOLE (0x10) ensures it starts in a new window/process group on Windows
+                # close_fds=True ensures no file handles (pipes) are inherited, allowing the parent to exit fully
+                creation_flags = 0x00000010 if platform.system() == "Windows" else 0
+                
+                subprocess.Popen(
+                    cmd, 
+                    shell=shell_cmd, 
+                    cwd=os.getcwd(), 
+                    creationflags=creation_flags,
+                    close_fds=True
+                )
+                
+                # Exit the current process immediately
+                os._exit(0)
+
+            restart_js = """
+            () => {
+                const style = document.createElement('style');
+                style.innerHTML = `
+                    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+                    .loader {
+                        border: 8px solid #f3f3f3;
+                        border-top: 8px solid #3498db;
+                        border-radius: 50%;
+                        width: 60px;
+                        height: 60px;
+                        animation: spin 2s linear infinite;
+                        margin-bottom: 20px;
+                    }
+                `;
+                document.head.appendChild(style);
+
+                const div = document.createElement('div');
+                div.style.position = 'fixed';
+                div.style.top = '0';
+                div.style.left = '0';
+                div.style.width = '100%';
+                div.style.height = '100%';
+                div.style.background = 'rgba(0,0,0,0.85)';
+                div.style.color = 'white';
+                div.style.display = 'flex';
+                div.style.flexDirection = 'column';
+                div.style.justifyContent = 'center';
+                div.style.alignItems = 'center';
+                div.style.zIndex = '9999';
+                div.style.fontFamily = 'sans-serif';
+                
+                div.innerHTML = `
+                    <div class="loader"></div>
+                    <div style="font-size: 1.5em; font-weight: bold;">Restarting Application...</div>
+                    <div style="margin-top: 10px; opacity: 0.8;">The page will reload automatically when the server is ready.</div>
+                `;
+                
+                document.body.appendChild(div);
+
+                // Wait 5 seconds for server to shut down, then start polling
+                setTimeout(() => {
+                    const poll = setInterval(() => {
+                        fetch('/')
+                        .then(r => {
+                            if(r.ok) {
+                                clearInterval(poll);
+                                window.location.reload();
+                            }
+                        })
+                        .catch(e => console.log('Waiting for server...'));
+                    }, 1000);
+                }, 5000);
+            }
+            """
+
+            stop_js = """
+            () => {
+                const div = document.createElement('div');
+                div.style.position = 'fixed';
+                div.style.top = '0';
+                div.style.left = '0';
+                div.style.width = '100%';
+                div.style.height = '100%';
+                div.style.background = 'rgba(0,0,0,0.8)';
+                div.style.color = 'white';
+                div.style.display = 'flex';
+                div.style.justifyContent = 'center';
+                div.style.alignItems = 'center';
+                div.style.zIndex = '9999';
+                div.style.fontSize = '2em';
+                div.style.fontFamily = 'sans-serif';
+                div.innerText = 'Application Stopped. You can close this tab.';
+                document.body.appendChild(div);
+            }
+            """
+
+            def stop_app():
+                import os
+                import logging
+                logging.info("Stopping application...")
+                # Nuclear option for Windows to ensure immediate return to shell
+                os.system(f"taskkill /F /PID {os.getpid()}")
+
+            restart_btn.click(restart_app, inputs=None, outputs=None, js=restart_js)
+            stop_app_btn.click(stop_app, inputs=None, outputs=None, js=stop_js)
 
         # Settings Tab
         with gr.TabItem("Settings"):

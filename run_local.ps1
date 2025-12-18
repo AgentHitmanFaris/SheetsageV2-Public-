@@ -72,4 +72,4 @@ else {
 # Run the Gradio interface
 Write-Host "Starting Gradio Interface..."
 Write-Host "Using Python: $PythonExec"
-& $PythonExec launch_gradio.py
+& $PythonExec launch_gradio.py $args

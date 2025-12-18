@@ -13,7 +13,7 @@ from scipy.special import softmax
 
 from .align import create_beat_to_time_fn
 from .assets import retrieve_asset
-from .beat_track import madmom
+from .beat_track import librosa_beat_track
 from .modules import EncOnlyTransducer, IdentityEncoder, TransformerEncoder
 from .representations import Handcrafted
 from .theory import (
@@ -35,7 +35,6 @@ class InputFeats(Enum):
     Enum representing input feature types.
     """
     HANDCRAFTED = 0
-    # JUKEBOX = 1  <-- Removed
 
 
 class Task(Enum):
@@ -68,13 +67,11 @@ class Status(Enum):
 
 _INPUT_TO_FRAME_RATE = {
     InputFeats.HANDCRAFTED: 16000 / 512,
-    # InputFeats.JUKEBOX: 44100 / 128, <-- Removed
 }
 _INPUT_TO_DIM = {
     InputFeats.HANDCRAFTED: 229,
-    # InputFeats.JUKEBOX: 4800, <-- Removed
 }
-_JUKEBOX_CHUNK_DURATION_EDGE = 23.75
+_CHUNK_DURATION_EDGE = 23.75
 _TERTIARIES_PER_BEAT = 4
 _MELODY_PITCH_MIN = 21
 _HARMONY_FAMILIES = ["", "m", "m7", "7", "maj7", "sus", "dim", "aug"]
@@ -108,8 +105,6 @@ def _init_extractor(input_feats):
     """
     if input_feats == InputFeats.HANDCRAFTED:
         extractor = Handcrafted()
-    # elif input_feats == InputFeats.JUKEBOX: <-- Removed
-    #    extractor = Jukebox(fp16=torch.cuda.is_available())
     else:
         raise ValueError()
     return extractor
@@ -214,7 +209,7 @@ def _beat_tracking_with_hints(
     )
     if legacy_behavior:
         l = segment_start_hint - beat_detection_padding
-        r = segment_start_hint + _JUKEBOX_CHUNK_DURATION_EDGE + beat_detection_padding
+        r = segment_start_hint + _CHUNK_DURATION_EDGE + beat_detection_padding
         sr, audio = decode_audio(audio_path_or_bytes)
         audio_duration = audio.shape[0] / sr
         l, r = [round(t * sr) for t in (l, r)]
@@ -232,7 +227,7 @@ def _beat_tracking_with_hints(
         )
 
     # Run beat detection on segment
-    first_downbeat_idx, beats_per_measure, beats = madmom(
+    first_downbeat_idx, beats_per_measure, beats = librosa_beat_track(
         sr,
         audio,
         beats_per_bar=beats_per_measure_hint
@@ -306,7 +301,7 @@ def _beat_tracking_with_hints(
         tertiaries_times = [
             t
             for t in tertiaries_times
-            if t < segment_offset + _JUKEBOX_CHUNK_DURATION_EDGE
+            if t < segment_offset + _CHUNK_DURATION_EDGE
         ]
         segment_duration = tertiaries_times[-1] - segment_offset
         tertiaries = (
@@ -349,7 +344,7 @@ def _split_into_chunks(
         chunk_slice = slice(None, None)
         chunk_tertiaries_times = tertiaries_times[chunk_slice]
         duration = chunk_tertiaries_times[-1] - chunk_tertiaries_times[0]
-        assert duration > 0 and duration <= _JUKEBOX_CHUNK_DURATION_EDGE
+        assert duration > 0 and duration <= _CHUNK_DURATION_EDGE
         chunks.append(chunk_slice)
     else:
         beats_per_chunk = beats_per_measure * measures_per_chunk
@@ -359,7 +354,7 @@ def _split_into_chunks(
             chunk_slice = slice(chunk_start_tertiary, chunk_end_tertiary)
             chunk_tertiaries_times = tertiaries_times[chunk_slice]
             duration = chunk_tertiaries_times[-1] - chunk_tertiaries_times[0]
-            if duration <= _JUKEBOX_CHUNK_DURATION_EDGE:
+            if duration <= _CHUNK_DURATION_EDGE:
                 beats_per_chunk = segment_end_beat
 
         for b in range(segment_start_downbeat, segment_end_beat, beats_per_chunk):
@@ -373,7 +368,7 @@ def _split_into_chunks(
             chunk_tertiaries_times = tertiaries_times[chunk_slice]
             duration = chunk_tertiaries_times[-1] - chunk_tertiaries_times[0]
             assert duration > 0
-            if duration > _JUKEBOX_CHUNK_DURATION_EDGE:
+            if duration > _CHUNK_DURATION_EDGE:
                 raise NotImplementedError(
                     "Dynamic chunking not implemented. Try halving measures_per_chunk."
                 )
@@ -406,7 +401,7 @@ def _extract_features(
             chunk_tertiaries_times = tertiaries_times[chunk_slice]
             offset = chunk_tertiaries_times[0]
             duration = chunk_tertiaries_times[-1] - offset
-            assert duration <= _JUKEBOX_CHUNK_DURATION_EDGE
+            assert duration <= _CHUNK_DURATION_EDGE
             try:
                 fr, feats = extractor(audio_path, offset=offset, duration=duration)
             except Exception as e:
@@ -840,7 +835,6 @@ def sheetsage(
 
     # Extract features
     status_change_callback(Status.EXTRACTING_FEATURES)
-    # Jukebox extraction logic removed
     
     # Determine unique inputs to extract features from
     unique_inputs = []
@@ -948,12 +942,6 @@ if __name__ == "__main__":
         help="Directory to save the output files (lead sheet PDF, synchronized MIDI, etc.).",
     )
     parser.add_argument(
-        "-j",
-        "--use_jukebox",
-        action="store_true",
-        help="If set, improves transcription quality by using OpenAI Jukebox (requires GPU w/ >=12GB VRAM).",
-    )
-    parser.add_argument(
         "--measures_per_chunk",
         type=int,
         help="The number of measures which Sheet Sage transcribes at a time (for best results, set to phrase length).",
@@ -1009,7 +997,6 @@ if __name__ == "__main__":
         title=None,
         artist=None,
         output_dir="./output",
-        use_jukebox=False,
         measures_per_chunk=8,
         segment_hints_are_downbeats=False,
         beats_per_measure=None,
@@ -1029,7 +1016,6 @@ if __name__ == "__main__":
         args.audio_path_or_url,
         segment_start_hint=args.segment_start_hint,
         segment_end_hint=args.segment_end_hint,
-        use_jukebox=args.use_jukebox,
         measures_per_chunk=args.measures_per_chunk,
         segment_hints_are_downbeats=args.segment_hints_are_downbeats,
         beats_per_measure_hint=args.beats_per_measure,

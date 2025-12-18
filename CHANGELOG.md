@@ -2,6 +2,27 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v0.3.2] - 2025-12-18
+
+### Changed
+- **Jukebox Cleanup**: Removed all remaining code, comments, and CLI arguments related to OpenAI Jukebox from `infer.py`, `gradio_app.py`, and `README.md`.
+- **Refactoring**: Renamed `madmom` function to `librosa_beat_track` in `beat_track.py` to accurately reflect the underlying library.
+- **Code Quality**: Removed duplicate logic and redundant status updates in `gradio_app.py`.
+- **LilyPond**: Updated the LilyPond template version from 2.18.2 to **2.24.3**.
+
+### Improved
+- **Clean Restart**: The "Restart App" function now fully detaches the new process and closes the old one cleanly, launching a new terminal window.
+- **Auto-Refresh**: The web interface now automatically refreshes when the application validates that the server has restarted, removing the need for manual page reloads.
+
+### Added
+- **Configuration**: Added `yt_dlp_path` and `output_dir` to the global configuration.
+    - `yt-dlp` path is now configurable and used consistently across the app.
+    - All transcription outputs (Lead Sheet, Piano, Basic Pitch, Demucs) now respect the configured `output_dir`.
+
+### Fixed
+- **HTML Mixer**: Fixed a race condition where the "Play" button wouldn't work on first load. Implemented a robust polling mechanism to ensure the audio player is fully initialized before attaching controls.
+- **Basic Pitch Bug**: Fixed an issue where `create_mix` was being called twice during Basic Pitch transcription.
+
 ## [v0.3.1] - 2025-12-17
 
 ### Added

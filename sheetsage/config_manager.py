@@ -3,7 +3,9 @@ import os
 import pathlib
 
 DEFAULT_CONFIG = {
-    "soundfont_path": os.path.join(os.getcwd(), "soundfont", "MS Basic.sf3")
+    "soundfont_path": os.path.join(os.getcwd(), "soundfont", "MS Basic.sf3"),
+    "yt_dlp_path": os.path.join(os.getcwd(), "python_embeded", "Scripts", "yt-dlp.exe"),
+    "output_dir": os.path.join(os.getcwd(), "output")
 }
 
 CONFIG_FILE = pathlib.Path(os.getcwd()) / ".sheetsage_config.json"

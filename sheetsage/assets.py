@@ -66,9 +66,12 @@ def _download_with_ytdlp(url, dest_path, filename, timeout=300):
     """
     Downloads a specific file from a MEGA.nz URL using yt-dlp.
     """
-    yt_dlp_path = pathlib.Path(os.getcwd()) / "python_embeded" / "Scripts" / "yt-dlp.exe"
+    from .config_manager import load_config
+    config = load_config()
+    yt_dlp_path = pathlib.Path(config.get("yt_dlp_path", ""))
+    
     if not yt_dlp_path.exists():
-         yt_dlp_path = "yt-dlp" # Fallback to system path
+         yt_dlp_path = pathlib.Path("yt-dlp") # Fallback to system path
     cmd = f"{shlex.quote(str(yt_dlp_path))} --no-cache-dir --output {shlex.quote(str(dest_path))} --match-filter \"filename = '{filename}'\" {shlex.quote(url)}"
     logging.info(f"Downloading with yt-dlp: {cmd}")
     try:

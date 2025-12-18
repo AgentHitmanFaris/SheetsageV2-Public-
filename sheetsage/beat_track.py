@@ -3,7 +3,7 @@ import math
 import numpy as np
 import librosa
 
-def madmom(sr, audio, beats_per_bar=None, beats_per_minute_hint=None):
+def librosa_beat_track(sr, audio, beats_per_bar=None, beats_per_minute_hint=None):
     """
     Runs beat tracking using Librosa (replacing the heavy Madmom binary dependency).
 

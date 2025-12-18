@@ -61,7 +61,7 @@ _LILY_TEMPLATE = r"""
 
 >>
 
-\version "2.18.2"
+\version "2.24.3"
 """.strip()
 
 

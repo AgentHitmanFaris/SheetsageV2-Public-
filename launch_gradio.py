@@ -70,10 +70,15 @@ if os.path.isdir(bin_dir):
         except Exception as e:
             print(f"Failed to copy libfluidsynth DLL: {e}")
 
-from sheetsage.gradio_app import demo
+from sheetsage.gradio_app import demo, css
 
 
 if __name__ == "__main__":
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--no-browser", action="store_true", help="Do not open browser on startup")
+    args, unknown = parser.parse_known_args()
+
     print("Launching Sheet Sage Gradio Interface...")
     
     try:
@@ -92,6 +97,7 @@ if __name__ == "__main__":
     demo.queue().launch(
         server_name="127.0.0.1",
         server_port=7860,
-        inbrowser=True,
+        inbrowser=not args.no_browser,
         allowed_paths=[os.getcwd()],
+        css=css
     )

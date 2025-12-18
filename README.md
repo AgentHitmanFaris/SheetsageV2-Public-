@@ -28,7 +28,7 @@ Sheet Sage is an AI-powered tool that transcribes music audio into lead sheets (
 2.  **Run the Setup Script**:
     Double-click or run `setup_local.bat` in a terminal.
     ```powershell
-    .setup_local.bat
+    ./setup_local.bat
     ```
     This script will:
     *   Download a portable Python 3.11 environment.
@@ -41,7 +41,7 @@ Sheet Sage is an AI-powered tool that transcribes music audio into lead sheets (
 ### Launching the Interface
 Double-click `run_local.bat` to start the web interface.
 ```powershell
-.run_local.bat
+./run_local.bat
 ```
 The interface will open automatically in your browser at `http://127.0.0.1:7860`.
 
