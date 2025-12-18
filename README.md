@@ -16,6 +16,7 @@ Sheet Sage is an AI-powered tool that transcribes music audio into lead sheets (
 ### Prerequisites
 *   **Windows 10/11** (Currently optimized for Windows)
 *   **NVIDIA GPU** (Recommended for reasonable speed, though CPU is supported)
+*   **Python 3.11** (Managed automatically via the setup script)
 *   **Git** installed and available in PATH.
 
 ### One-Click Setup
@@ -55,16 +56,27 @@ The interface will open automatically in your browser at `http://127.0.0.1:7860`
     *   Best for: Solo piano recordings.
     *   Output: A highly detailed MIDI file capturing all notes and pedal usage.
 
-3.  **Basic Pitch (Polyphonic)**:
     *   Best for: Getting raw, expressive MIDI (including pitch bends) from any instrument.
     *   Output: MIDI files (both quantized for sheet music and raw for DAW usage).
 
-## Troubleshooting
+### New Features (v0.3.3)
+*   **History Tab**: Easily browse and reload previous transcription projects.
+    *   Organized by **Song Name** and **Timestamp**.
+    *   One-click restore of the full mixer state and piano roll.
 
-*   **Transcription is slow**: Ensure your GPU is detected. The startup log should say "Hardware Detected: GPU". If not, reinstall PyTorch with CUDA support.
-*   **"Stuck" at start**: The first run downloads/loads large models (Demucs, Basic Pitch). Check the console window for progress.
+## Troubleshooting & Recent Fixes (v0.3.3+)
+
+### Solved Issues
+*   **Audio Playback 404 Errors**: Resolved by implementing a secure file caching system (`temp_playback` folder). The application now safely copies files for the web player to access, bypassing complex Windows path permission issues.
+*   **Audio Truncation**: Fixed an issue where only the first 30 seconds of audio would play. The mixer now correctly loads the full processed audio file.
+*   **Restart Loops**: Improved the "Restart App" stability. It now performs an in-place restart without opening multiple browser tabs.
+    *   *Note*: If the app hangs during restart, you may need to manually refresh the page (F5).
+
+### Common Questions
+*   **"No audio file provided" Warning**: The application will now warn you if you try to transcribe without uploading a file. This is a safety feature to prevent crashes.
+*   **Vocals Track is Muted**: In the "Preview" mixer, the **Vocals** track is loaded but set to **0% volume** by default. This is intentional to let you hear the transcription clearly. You can unmute it manually.
+*   **Slow Transcription**: Ensure your GPU is detected. Check the console log for "Hardware Detected: GPU".
 *   **Missing Dependencies**: If `setup_local.bat` fails, try running it again or check your internet connection.
-*   **Audio Cuts Off**: This has been patched in v0.3.3. If you experience this, ensure you have restarted the application to apply the latest fix.
 
 ## Architecture
 
