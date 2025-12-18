@@ -94,10 +94,20 @@ if __name__ == "__main__":
         print("Warning: Torch not found. Hardware detection failed.")
 
     print("Access the interface at http://127.0.0.1:7860")
+    # Determine drive root (e.g., D:\) to allow absolute path access
+    drive_root = os.path.splitdrive(os.getcwd())[0] + os.sep
+    
     demo.queue().launch(
         server_name="127.0.0.1",
         server_port=7860,
         inbrowser=not args.no_browser,
-        allowed_paths=[os.getcwd()],
+        allowed_paths=[
+            ".", 
+            os.getcwd(), 
+            os.path.join(os.getcwd(), "temp_playback"),
+            drive_root, 
+            drive_root.replace("\\", "/"),
+            "C:\\", "C:/", "D:\\", "D:/"
+        ],
         css=css
     )

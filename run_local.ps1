@@ -72,4 +72,20 @@ else {
 # Run the Gradio interface
 Write-Host "Starting Gradio Interface..."
 Write-Host "Using Python: $PythonExec"
-& $PythonExec launch_gradio.py $args
+# Loop for restart capability (Exit Code 42 = Restart)
+$ExitCode = 42
+$ScriptArgs = @($args) # Copy args to a modifiable array
+
+while ($ExitCode -eq 42) {
+    & $PythonExec launch_gradio.py $ScriptArgs
+    $ExitCode = $LASTEXITCODE
+    if ($ExitCode -eq 42) {
+        Write-Host "Restarting Sheet Sage..." -ForegroundColor Cyan
+        Start-Sleep -Seconds 1
+        
+        # On restart, don't open a new browser tab; the existing one will refresh.
+        if ($ScriptArgs -notcontains "--no-browser") {
+             $ScriptArgs += "--no-browser"
+        }
+    }
+}

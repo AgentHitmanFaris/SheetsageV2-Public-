@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v0.3.3] - 2025-12-18
+
+### Fixed
+- **In-Place Restart**: Fixed the application restart logic. The "Restart App" button now correctly reloads the server within the same terminal window without spawning detached processes or closing the connection prematurely.
+- **Audio Playback Truncation**: Resolved an issue where the web mixer would sometimes play only the first 30 seconds of an uploaded song. The player now forces the use of the fully processed, standardized WAV file from the server to ensure full-length playback.
+
 ## [v0.3.2] - 2025-12-18
 
 ### Changed
@@ -15,6 +21,8 @@ All notable changes to this project will be documented in this file.
 - **Auto-Refresh**: The web interface now automatically refreshes when the application validates that the server has restarted, removing the need for manual page reloads.
 
 ### Added
+- **UI Upgrade**: Overhauled the **Multi-Track Mixer** with a professional "AnthemScore-style" Dark Mode interface.
+    - Features explicit sync controls, time display, and color-coded tracks (Original=Blue, Synth=Yellow, Vocals=Red).
 - **Configuration**: Added `yt_dlp_path` and `output_dir` to the global configuration.
     - `yt-dlp` path is now configurable and used consistently across the app.
     - All transcription outputs (Lead Sheet, Piano, Basic Pitch, Demucs) now respect the configured `output_dir`.

@@ -64,6 +64,7 @@ The interface will open automatically in your browser at `http://127.0.0.1:7860`
 *   **Transcription is slow**: Ensure your GPU is detected. The startup log should say "Hardware Detected: GPU". If not, reinstall PyTorch with CUDA support.
 *   **"Stuck" at start**: The first run downloads/loads large models (Demucs, Basic Pitch). Check the console window for progress.
 *   **Missing Dependencies**: If `setup_local.bat` fails, try running it again or check your internet connection.
+*   **Audio Cuts Off**: This has been patched in v0.3.3. If you experience this, ensure you have restarted the application to apply the latest fix.
 
 ## Architecture
 

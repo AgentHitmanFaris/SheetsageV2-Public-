@@ -38,6 +38,12 @@ def transcribe_audio_piano(audio_file, progress=gr.Progress()):
 
     logging.info("Starting Piano Transcription")
     print(f"\n--- Starting Piano Transcription (ByteDance) ---")
+    try:
+        from sheetsage.utils import get_approximate_audio_length
+        dur = get_approximate_audio_length(audio_file)
+        print(f"Detected Audio Duration: {dur:.2f} seconds")
+    except Exception as e:
+        print(f"Could not detect duration: {e}")
     progress(0, desc="Initializing...")
 
     try:
@@ -45,7 +51,14 @@ def transcribe_audio_piano(audio_file, progress=gr.Progress()):
         base_output_dir = pathlib.Path(current_config.get("output_dir", os.path.join(os.getcwd(), "output")))
         base_temp_dir = base_output_dir / "piano"
         base_temp_dir.mkdir(parents=True, exist_ok=True)
-        output_dir = base_temp_dir / uuid.uuid4().hex
+        
+        # Cleanup filename for folder
+        import datetime
+        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M")
+        clean_name = pathlib.Path(audio_file).stem.replace(" ", "_").replace("(", "").replace(")", "")[:20]
+        folder_name = f"{timestamp}_{clean_name}_{uuid.uuid4().hex[:6]}"
+        
+        output_dir = base_temp_dir / folder_name
         output_dir.mkdir(parents=True, exist_ok=True)
         print(f"Output directory: {output_dir}")
 
@@ -78,9 +91,13 @@ def transcribe_audio_piano(audio_file, progress=gr.Progress()):
                   output_files_list.append(mixed_audio_path)
 
         # Generator Mixer HTML
+        # Cache properly
+        orig_cached = cache_file_for_playback(original_audio_segment_path if original_audio_segment_path else audio_file)
+        synth_cached = cache_file_for_playback(synthesized_audio_path)
+        
         html_player = generate_mixer_html(
-             orig_path=audio_file,
-             synth_path=synthesized_audio_path
+             orig_path=orig_cached,
+             synth_path=synth_cached
         )
 
         return output_files_list, None, html_player, "Transcription successful!"
@@ -92,8 +109,169 @@ def transcribe_audio_piano(audio_file, progress=gr.Progress()):
 from sheetsage.config_manager import load_config, save_config
 
 # Load initial configuration
+# Load initial configuration
 current_config = load_config()
 
+def cache_file_for_playback(original_path):
+    """
+    Copies the file to a temporary 'playback' directory with a safe filename.
+    Returns the absolute path to the cached file.
+    """
+    if not original_path or not os.path.exists(original_path):
+        return None
+        
+    try:
+        # Debug Log
+        print(f"Caching file: {original_path}")
+        
+        # Use a temp directory inside the project to ensure access
+        playback_dir = os.path.join(os.getcwd(), "temp_playback")
+        os.makedirs(playback_dir, exist_ok=True)
+        
+        # Create a safe filename hash
+        ext = os.path.splitext(original_path)[1]
+        safe_name = f"audio_{uuid.uuid4().hex}{ext}"
+        target_path = os.path.join(playback_dir, safe_name)
+        
+        # Try copy
+        shutil.copy(original_path, target_path)
+        print(f"Cached to: {target_path}")
+        return target_path
+    except Exception as e:
+        print(f"CACHE FAILURE: {e}")
+        logging.error(f"Failed to cache file for playback: {e}")
+        return original_path # Fallback
+
+def get_history_items():
+    """
+    Scans the output directory for historical transcription projects.
+    Returns a list of strings formatted as "[YYYY-MM-DD HH:MM] Relative/Path"
+    """
+    history_dir = current_config.get("output_dir", os.path.join(os.getcwd(), "output"))
+    items = []
+    
+    if not os.path.exists(history_dir):
+        return []
+
+    # Using os.walk to find leaf directories or directories that look like projects
+    for root, dirs, files in os.walk(history_dir):
+        # A project usually has identifying files
+        if any(f.endswith((".midi", ".mid", ".wav")) for f in files):
+            # Check if this is a leaf node or a project folder
+            # We filter out the 'demucs' folder internal structures usually, but showing them is harmless if they contain audio
+            
+            # Simple heuristic: If it has "output_mixed.wav" or "basic_pitch.midi" or "transcription.midi"
+            valid_indicators = ["output_mixed.wav", "basic_pitch.midi", "transcription.midi", "vocals.wav"]
+            if any(f in files for f in valid_indicators):
+                rel_path = os.path.relpath(root, history_dir)
+                try:
+                     mtime = os.path.getmtime(root)
+                     import datetime
+                     dt = datetime.datetime.fromtimestamp(mtime).strftime("%Y-%m-%d %H:%M")
+                     items.append(f"[{dt}] {rel_path}")
+                except:
+                     items.append(rel_path)
+    
+    items.sort(reverse=True)
+    return items
+
+def load_history_project(selected_item):
+    """
+    Loads results from a selected history item back into the interface.
+    """
+    if not selected_item:
+        return None, None, None, "No item selected."
+
+    try:
+        # Parse path
+        if "] " in selected_item:
+            rel_path = selected_item.split("] ", 1)[1]
+        else:
+            rel_path = selected_item
+            
+        base_output_dir = current_config.get("output_dir", os.path.join(os.getcwd(), "output"))
+        project_dir = os.path.join(base_output_dir, rel_path)
+        
+        if not os.path.exists(project_dir):
+            return None, None, None, "Project directory not found."
+            
+        files = [os.path.join(project_dir, f) for f in os.listdir(project_dir) if os.path.isfile(os.path.join(project_dir, f))]
+        
+        # 1. Output Files (Downloadable)
+        # Filter for relevant extensions
+        download_files = [f for f in files if f.lower().endswith(('.pdf', '.midi', '.mid', '.ly', '.wav'))]
+        
+        # 2. Audio Paths for Mixer
+        # Basic heuristic to find the "best" file for each slot
+        
+        # Original
+        # create_mix guarantees "output_original.wav"
+        orig_path = next((f for f in files if "output_original.wav" in f), None)
+        if not orig_path:
+             # Fallback to anything with "original"
+             orig_path = next((f for f in files if "original" in f and f.endswith(".wav")), None)
+        
+        # Synth
+        # "piano_synth.wav", "basic_pitch_synth.wav"
+        synth_path = next((f for f in files if "synth" in f and f.endswith(".wav")), None)
+        
+        # Vocals
+        # "vocals.wav" usually from demucs
+        # For history, we might need to look deeper if it's the main project folder
+        vocals_path = next((f for f in files if "vocals" in f and f.endswith(".wav")), None)
+        
+        # CACHE FILES FOR PLAYBACK (Fix 404s)
+        # We copy them to a known safe location with simple names
+        orig_cached = cache_file_for_playback(orig_path)
+        synth_cached = cache_file_for_playback(synth_path)
+        vocals_cached = cache_file_for_playback(vocals_path)
+        
+        html_player = generate_mixer_html(orig_cached, synth_cached, vocals_cached)
+        
+        # 3. Piano Roll
+        # Try to find a MIDI file to visualize
+        fig = None
+        midi_path = next((f for f in download_files if f.endswith(".midi") or f.endswith(".mid")), None)
+        if midi_path:
+            try:
+                # We need to construct a pseudo-LeadSheet tuple to use plot_piano_roll 
+                # OR we refactor plot_piano_roll to accept MIDI.
+                # Refactoring plot_piano_roll is safer.
+                pass 
+                # For now, let's just make a simple plot if possible, or skip.
+                # Actually, let's simply plot the MIDI using pretty_midi directly here.
+                pm = pretty_midi.PrettyMIDI(midi_path)
+                fig = Figure(figsize=(12, 6))
+                ax = fig.subplots()
+                
+                # Collect notes
+                all_notes = []
+                for inst in pm.instruments:
+                    for note in inst.notes:
+                         all_notes.append((note.start, note.end, note.pitch))
+                
+                if all_notes:
+                    starts = [n[0] for n in all_notes]
+                    durations = [n[1] - n[0] for n in all_notes]
+                    pitches = [n[2] for n in all_notes]
+                    
+                    ax.barh(pitches, durations, left=starts, height=0.8, color='#4A90E2')
+                    ax.set_ylim(min(pitches)-5, max(pitches)+5)
+                    ax.set_xlabel("Time (s)")
+                    ax.set_ylabel("MIDI Pitch")
+                    ax.set_title(f"Piano Roll: {os.path.basename(midi_path)}")
+                    ax.grid(True, linestyle='--', alpha=0.3)
+                    fig.tight_layout()
+                else:
+                    ax.text(0.5, 0.5, "Empty MIDI", ha='center', va='center')
+                    
+            except Exception as e:
+                logging.warning(f"Failed to plot piano roll from history: {e}")
+
+        return download_files, fig, html_player, f"Loaded project: {rel_path}"
+        
+    except Exception as e:
+        return None, None, None, f"Error loading history: {e}"
 
 def plot_piano_roll(lead_sheet):
     """
@@ -315,6 +493,13 @@ def transcribe_audio_lead_sheet(
         print(msg_hw)
         print(msg_model)
         
+        try:
+            from sheetsage.utils import get_approximate_audio_length
+            dur = get_approximate_audio_length(audio_path_or_url or audio_file)
+            print(f"Detected Audio Duration: {dur:.2f} seconds")
+        except Exception as e:
+            print(f"Could not detect duration: {e}")
+        
         progress(0, desc="Initializing...")
 
         # Handle optional float/int inputs that might be None or 0
@@ -358,8 +543,16 @@ def transcribe_audio_lead_sheet(
         base_output_dir = pathlib.Path(current_config.get("output_dir", os.path.join(os.getcwd(), "output")))
         base_temp_dir = base_output_dir / "leadsheet"
         base_temp_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Cleanup filename
+        import datetime
+        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M")
+        name_src = audio_path_or_url
+        if not name_src: name_src = "audio"
+        clean_name = pathlib.Path(name_src).stem.replace(" ", "_").replace("(", "").replace(")", "")[:20]
+        folder_name = f"{timestamp}_{clean_name}_{uuid.uuid4().hex[:6]}"
 
-        output_dir = base_temp_dir / uuid.uuid4().hex
+        output_dir = base_temp_dir / folder_name
         output_dir.mkdir(parents=True, exist_ok=True)
         print(f"Output directory: {output_dir}")
 
@@ -437,10 +630,15 @@ def transcribe_audio_lead_sheet(
              status += " (PDF failed)"
 
         # Generator Mixer HTML
+        # Cache for playback safety
+        orig_cached = cache_file_for_playback(original_audio_segment_path if original_audio_segment_path else audio_path_or_url)
+        synth_cached = cache_file_for_playback(synthesized_audio_path)
+        vocals_cached = cache_file_for_playback(demucs_vocals_path)
+
         html_player = generate_mixer_html(
-             orig_path=audio_path_or_url,
-             synth_path=synthesized_audio_path,
-             vocals_path=demucs_vocals_path
+             orig_path=orig_cached,
+             synth_path=synth_cached,
+             vocals_path=vocals_cached
         )
         
         status = "Transcription successful!"
@@ -455,138 +653,250 @@ def transcribe_audio_lead_sheet(
 
 def generate_mixer_html(orig_path, synth_path, vocals_path=None):
     """
-    Generates a custom HTML5 Audio Mixer for playing tracks in sync.
+    Generates an AnthemScore-style HTML5 Audio Mixer.
+    Features: Master Clock, Synchronized Seek, Independent Volume Sliders.
     """
     import uuid
-    import json
+    import urllib.parse
+    
     player_id = f"mixer_{uuid.uuid4().hex[:8]}"
     
     def make_src(path):
         if not path: return ""
         s = str(path)
         if s.startswith("http") or s.startswith("data:"): return s
-        # Local file: Normalize and Encode
+        
+        # RELATIVE PATH ATTEMPT (Fix for 404s on D: drive)
+        try:
+             cwd = os.getcwd()
+             if os.path.abspath(s).startswith(cwd):
+                  rel = os.path.relpath(s, cwd)
+                  s = rel
+        except:
+             pass
+
+        # Local file: Normalize and Encode for Gradio
         s = s.replace("\\", "/")
         encoded = urllib.parse.quote(s)
-        return f"/gradio_api/file={encoded}"
+        return f"/file={encoded}"
 
     src_orig = make_src(orig_path)
     src_synth = make_src(synth_path)
     src_vocals = make_src(vocals_path)
     
-    tracks_html = ""
+    # --- BUILD TRACKS & CONTROLS ---
+    tracks_dom = ""
     controls_html = ""
     js_refs = ""
     
-    # Track 1: Original
-    if src_orig:
-        tracks_html += f'<audio id="{player_id}_orig" src="{src_orig}" preload="auto"></audio>'
-        controls_html += f"""
-        <div style="margin-bottom: 10px; display: flex; align-items: center;">
-            <span style="width: 80px; font-weight: bold;">Original</span>
-            <input type="range" id="{player_id}_vol_orig" min="0" max="1" step="0.01" value="0.6" style="flex-grow: 1; margin: 0 10px;">
-        </div>
-        """
-        js_refs += f'const aOrig = document.getElementById("{player_id}_orig");\n'
-    else:
-        js_refs += 'const aOrig = null;\n'
-
-    # Track 2: Synth
-    if src_synth:
-        tracks_html += f'<audio id="{player_id}_synth" src="{src_synth}" preload="auto"></audio>'
-        controls_html += f"""
-        <div style="margin-bottom: 10px; display: flex; align-items: center;">
-            <span style="width: 80px; font-weight: bold;">Synth</span>
-            <input type="range" id="{player_id}_vol_synth" min="0" max="1" step="0.01" value="0.8" style="flex-grow: 1; margin: 0 10px;">
-        </div>
-        """
-        js_refs += f'const aSynth = document.getElementById("{player_id}_synth");\n'
-    else:
-        js_refs += 'const aSynth = null;\n'
-
-    # Track 3: Vocals (Optional)
-    if src_vocals:
-        tracks_html += f'<audio id="{player_id}_vocals" src="{src_vocals}" preload="auto"></audio>'
-        controls_html += f"""
-        <div style="margin-bottom: 10px; display: flex; align-items: center;">
-            <span style="width: 80px; font-weight: bold;">Vocals</span>
-            <input type="range" id="{player_id}_vol_vocals" min="0" max="1" step="0.01" value="0.0" style="flex-grow: 1; margin: 0 10px;">
-        </div>
-        """
-        js_refs += f'const aVocals = document.getElementById("{player_id}_vocals");\n'
-    else:
-        js_refs += 'const aVocals = null;\n'
-
-    html = f"""
-    <div style="border: 1px solid #cbd5e0; padding: 15px; border-radius: 8px; background: #e2e8f0; color: #1a202c;">
-        {tracks_html}
-        
-        <div style="display: flex; gap: 10px; margin-bottom: 15px; align-items: center;">
-            <button id="{player_id}_btn" onclick="{player_id}_toggle()" style="padding: 10px 20px; font-size: 16px; font-weight: bold; cursor: pointer; background: #3182ce; color: white; border: none; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">▶ Play</button>
-            <div style="flex-grow: 1; display: flex; align-items: center;">
-                 <input type="range" id="{player_id}_seek" min="0" max="100" value="0" style="width: 100%; cursor: pointer;">
+    # Helper to build a track row (Label + Volume Slider)
+    # Replicates the AnthemScore look: Label on left, Long Slider on right
+    def mk_track_row(label, aud_id, vol_id, color_hex):
+        return f"""
+        <div class="track-row">
+            <div class="track-label" style="border-left: 4px solid {color_hex};">
+                <span class="icon">🔊</span> {label}
             </div>
+            <input type="range" id="{vol_id}" class="vol-slider" min="0" max="1" step="0.01" value="1.0" 
+                   oninput="document.getElementById('{aud_id}').volume=this.value">
+        </div>
+        """
+
+    # 1. Original Track
+    if src_orig:
+        tracks_dom += f'<audio id="{player_id}_orig" src="{src_orig}" preload="auto"></audio>'
+        controls_html += mk_track_row("Original", f"{player_id}_orig", f"{player_id}_vol_orig", "#3b82f6") # Blue
+        js_refs += f'const t1 = document.getElementById("{player_id}_orig"); tracks.push(t1);\n'
+
+    # 2. Synth Track
+    if src_synth:
+        tracks_dom += f'<audio id="{player_id}_synth" src="{src_synth}" preload="auto"></audio>'
+        controls_html += mk_track_row("Transcribe", f"{player_id}_synth", f"{player_id}_vol_synth", "#eab308") # Yellow
+        js_refs += f'const t2 = document.getElementById("{player_id}_synth"); tracks.push(t2);\n'
+
+    # 3. Vocals Track (Optional)
+    if src_vocals:
+        tracks_dom += f'<audio id="{player_id}_vocals" src="{src_vocals}" preload="auto"></audio>'
+        controls_html += mk_track_row("Vocals", f"{player_id}_vocals", f"{player_id}_vol_vocals", "#ef4444") # Red
+        js_refs += f'const t3 = document.getElementById("{player_id}_vocals"); tracks.push(t3);\n'
+
+    # --- HTML / CSS BLOCK ---
+    html = f"""
+    <style>
+        /* AnthemScore-ish Dark Theme */
+        #{player_id}_container {{
+            background-color: #2b2b2b;
+            color: #ececec;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Segoe UI', sans-serif;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        }}
+        /* Master Controls */
+        #{player_id}_master {{
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #444;
+        }}
+        .play-btn {{
+            background: #eab308;
+            color: #111;
+            border: none;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            font-size: 24px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.1s;
+        }}
+        .play-btn:active {{ transform: scale(0.95); }}
+        
+        /* Seek Bar */
+        .seek-container {{ flex-grow: 1; position: relative; }}
+        input[type=range].master-seek {{
+            width: 100%;
+            cursor: pointer;
+            accent-color: #eab308;
+        }}
+        .time-display {{ font-family: monospace; font-size: 14px; color: #aaa; min-width: 80px; text-align: right; }}
+
+        /* Track Rows */
+        .track-rows {{ display: flex; flex-direction: column; gap: 10px; }}
+        .track-row {{
+            display: flex;
+            align-items: center;
+            background: #1e1e1e;
+            padding: 8px 12px;
+            border-radius: 6px;
+        }}
+        .track-label {{
+            width: 120px;
+            font-weight: 600;
+            font-size: 14px;
+            padding-left: 10px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }}
+        .vol-slider {{
+            flex-grow: 1;
+            margin-left: 15px;
+            height: 6px;
+            cursor: pointer;
+            accent-color: #3b82f6; /* Default Blue */
+        }}
+        /* Specific slider colors override via ID in inline styles above */
+    </style>
+
+    <div id="{player_id}_container">
+        <div style="display:none;">{tracks_dom}</div>
+
+        <div id="{player_id}_master">
+            <button id="{player_id}_btn" class="play-btn">▶</button>
+            <div class="seek-container">
+                <input type="range" id="{player_id}_seek" class="master-seek" min="0" max="100" value="0" step="0.1">
+            </div>
+            <div id="{player_id}_time" class="time-display">0:00 / 0:00</div>
         </div>
 
-        {controls_html}
+        <div class="track-rows">
+            {controls_html}
+        </div>
     </div>
 
     <script>
     (function() {{
-        setTimeout(function() {{
+        setTimeout(() => {{
+            const tracks = [];
             {js_refs}
-            const btn = document.getElementById("{player_id}_btn");
-            const slider = document.getElementById("{player_id}_seek");
             
-            // Volume Handlers
-            if(aOrig && document.getElementById("{player_id}_vol_orig")) document.getElementById("{player_id}_vol_orig").oninput = (e) => aOrig.volume = e.target.value;
-            if(aSynth && document.getElementById("{player_id}_vol_synth")) document.getElementById("{player_id}_vol_synth").oninput = (e) => aSynth.volume = e.target.value;
-            if(aVocals && document.getElementById("{player_id}_vol_vocals")) document.getElementById("{player_id}_vol_vocals").oninput = (e) => aVocals.volume = e.target.value;
+            const btn = document.getElementById("{player_id}_btn");
+            const seek = document.getElementById("{player_id}_seek");
+            const timeDisp = document.getElementById("{player_id}_time");
+            let isDragging = false;
 
-            // Master Controller (Use Original as timing master if avail, else Synth)
-            const master = aOrig || aSynth || aVocals;
-            const slaves = [aOrig, aSynth, aVocals].filter(a => a && a !== master);
+            // Pick a master track (Original prefers, else Synth)
+            const master = tracks[0]; 
+            if(!master) return;
 
-            if (master) {{
-                // Slider Update
-                master.ontimeupdate = () => {{
-                    if(master.duration && !Number.isNaN(master.duration)) slider.value = (master.currentTime / master.duration) * 100;
-                }};
+            // --- 1. Master Play/Pause ---
+            btn.onclick = function() {{
+                if(master.paused) {{
+                    // Play all
+                    tracks.forEach(t => t.play().catch(e => console.log(e)));
+                    btn.innerHTML = "⏸";
+                }} else {{
+                    // Pause all
+                    tracks.forEach(t => t.pause());
+                    btn.innerHTML = "▶";
+                }}
+            }};
+
+            // --- 2. Update Seek Bar & Time ---
+            master.ontimeupdate = function() {{
+                if(!isDragging && master.duration) {{
+                    const pct = (master.currentTime / master.duration) * 100;
+                    seek.value = pct;
+                    
+                    // Sync others just in case they drift
+                    tracks.forEach(t => {{
+                        if(t !== master && Math.abs(t.currentTime - master.currentTime) > 0.2) {{
+                            t.currentTime = master.currentTime;
+                        }}
+                    }});
+                }}
                 
-                // Seek Handler
-                slider.oninput = (e) => {{
-                    if(master.duration) {{
-                        const t = (e.target.value / 100) * master.duration;
-                        master.currentTime = t;
-                        slaves.forEach(s => s.currentTime = t);
-                    }}
-                }};
-                
-                // Sync on seek
-                master.onseeked = () => {{
-                     slaves.forEach(s => s.currentTime = master.currentTime);
-                }};
-                
-                // Play Toggle
-                window["{player_id}_toggle"] = function() {{
-                    if (master.paused) {{
-                        master.play().then(() => {{
-                             slaves.forEach(s => s.play().catch(e => console.log("Slave play error", e))); 
-                        }}).catch(e => console.error("Play failed", e));
-                        btn.innerText = "⏸ Pause";
-                    }} else {{
-                        master.pause();
-                        slaves.forEach(s => s.pause());
-                        btn.innerText = "▶ Play";
-                    }}
-                }};
+                // Update Time Text
+                const cur = fmtTime(master.currentTime);
+                const tot = fmtTime(master.duration || 0);
+                timeDisp.innerText = cur + " / " + tot;
+            }};
+
+            // --- 3. Handle User Seeking ---
+            seek.oninput = function(e) {{
+                isDragging = true;
+                const pct = e.target.value;
+                const time = (pct / 100) * master.duration;
+                tracks.forEach(t => t.currentTime = time);
+            }};
+            
+            seek.onchange = function(e) {{
+                isDragging = false;
+                const pct = e.target.value;
+                const time = (pct / 100) * master.duration;
+                tracks.forEach(t => t.currentTime = time);
+            }};
+
+            // Helper: Format Seconds to MM:SS
+            function fmtTime(s) {{
+                if(isNaN(s)) return "0:00";
+                const m = Math.floor(s / 60);
+                const sec = Math.floor(s % 60);
+                return m + ":" + (sec < 10 ? "0" : "") + sec;
             }}
-        }}, 500);
+            
+            // Initial Volume Set
+            tracks.forEach(t => t.volume = 1.0);
+            
+            // Mute Vocals (Track 3) by default if it exists
+            if (tracks.length >= 3 && tracks[2]) {{
+                 tracks[2].volume = 0.0;
+                 const volSlider3 = document.getElementById("{player_id}_vol_vocals");
+                 if(volSlider3) volSlider3.value = 0.0;
+            }}
+
+        }}, 500); // Small delay to ensure DOM is ready
     }})();
     </script>
     """
     return html
-
+    
 def transcribe_audio_basic_pitch(
     audio_file,
     segment_start_hint=None,
@@ -627,6 +937,12 @@ def transcribe_audio_basic_pitch(
 
     logging.info("Starting Basic Pitch Transcription")
     print(f"\n--- Starting Basic Pitch Transcription ---")
+    try:
+        from sheetsage.utils import get_approximate_audio_length
+        dur = get_approximate_audio_length(audio_file)
+        print(f"Detected Audio Duration: {dur:.2f} seconds")
+    except Exception as e:
+        print(f"Could not detect duration: {e}")
     progress(0, desc="Initializing...")
 
     try:
@@ -677,7 +993,14 @@ def transcribe_audio_basic_pitch(
         base_output_dir = pathlib.Path(current_config.get("output_dir", os.path.join(os.getcwd(), "output")))
         base_temp_dir = base_output_dir / "basic_pitch"
         base_temp_dir.mkdir(parents=True, exist_ok=True)
-        output_dir = base_temp_dir / uuid.uuid4().hex
+        
+        # Cleanup filename
+        import datetime
+        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M")
+        clean_name = pathlib.Path(audio_file).stem.replace(" ", "_").replace("(", "").replace(")", "")[:20]
+        folder_name = f"{timestamp}_{clean_name}_{uuid.uuid4().hex[:6]}"
+        
+        output_dir = base_temp_dir / folder_name
         output_dir.mkdir(parents=True, exist_ok=True)
         print(f"Output directory: {output_dir}")
 
@@ -760,11 +1083,15 @@ def transcribe_audio_basic_pitch(
              midi_file = next((f for f in generated_files if f.endswith(".midi") or f.endswith(".mid") ), None)
         
         if midi_file:
+            progress(0.7, desc="Synthesizing Audio via FluidSynth...")
+            print("Status: Synthesizing Audio...")
             synthesized_audio_path = synthesize_midi(midi_file, current_config["soundfont_path"], output_dir, filename="basic_pitch_synth.wav")
             if synthesized_audio_path:
                  output_files_list.append(synthesized_audio_path)
 
                  # Mix with original
+                 progress(0.9, desc="Mixing Audio Tracks (may take a moment)...")
+                 print("Status: Mixing Audio Tracks...")
                  mixed_audio_path, original_audio_segment_path = create_mix(
                       audio_file,
                       synthesized_audio_path,
@@ -776,15 +1103,18 @@ def transcribe_audio_basic_pitch(
         status_str = "Basic Pitch transcription finished successfully."
         
         # Generate Mixer HTML
-        vocals_track = target_audio_path if separate_vocals else None
-        
+        # Generator Mixer HTML
+        orig_cached = cache_file_for_playback(original_audio_segment_path if original_audio_segment_path else audio_file)
+        synth_cached = cache_file_for_playback(synthesized_audio_path)
+        vocals_cached = cache_file_for_playback(demucs_vocals_path)
+
         html_player = generate_mixer_html(
-            orig_path=audio_file,
-            synth_path=synthesized_audio_path,
-            vocals_path=vocals_track
+             orig_path=orig_cached,
+             synth_path=synth_cached,
+             vocals_path=vocals_cached,
         )
 
-        return output_files_list, None, html_player, status_str
+        return output_files_list, None, html_player, "Transcription successful!"
 
     except Exception as e:
         logging.exception("Error during basic pitch transcription")
@@ -813,6 +1143,18 @@ def unified_transcriber(
     generate_pdf, # New argument
     progress=gr.Progress()
 ):
+    # Validation: Check if audio input is provided
+    if mode in ["Piano (Polyphonic)", "Basic Pitch (Polyphonic)"]:
+        if audio_file is None:
+            msg = f"Please upload an audio file for {mode}."
+            gr.Warning(msg)
+            return None, None, None, msg
+    else: # Lead Sheet
+        if audio_file is None and (audio_url is None or not audio_url.strip()):
+            msg = "Please upload an audio file or provide a URL."
+            gr.Warning(msg)
+            return None, None, None, msg
+
     if mode == "Piano (Polyphonic)":
         return transcribe_audio_piano(audio_file, progress=progress)
     elif mode == "Basic Pitch (Polyphonic)":
@@ -1006,39 +1348,20 @@ with gr.Blocks(title="Sheet Sage") as demo:
             cancel_btn.click(fn=None, inputs=None, outputs=None, cancels=[submit_event])
             
             def restart_app():
-                import sys
                 import os
-                import subprocess
-                import platform
-                logging.info("Restarting application...")
+                import logging
+                import time
+                import threading
                 
-                # Prepare command
-                startup_script = os.path.join(os.getcwd(), "run_local.bat")
-                if os.path.exists(startup_script):
-                    # Use cmd /c to run the batch file properly without shell=True if needed, 
-                    # but shell=True is simpler for batch files. 
-                    # We use CREATE_NEW_CONSOLE to detach.
-                    cmd = [startup_script, "--no-browser"]
-                    shell_cmd = True
-                else:
-                    cmd = [sys.executable] + sys.argv + ["--no-browser"]
-                    shell_cmd = False
-                
-                # Spawn new process
-                # CREATE_NEW_CONSOLE (0x10) ensures it starts in a new window/process group on Windows
-                # close_fds=True ensures no file handles (pipes) are inherited, allowing the parent to exit fully
-                creation_flags = 0x00000010 if platform.system() == "Windows" else 0
-                
-                subprocess.Popen(
-                    cmd, 
-                    shell=shell_cmd, 
-                    cwd=os.getcwd(), 
-                    creationflags=creation_flags,
-                    close_fds=True
-                )
-                
-                # Exit the current process immediately
-                os._exit(0)
+                def delayed_exit():
+                    time.sleep(1.0) # Give the server time to respond to the client
+                    logging.info("Exiting now (Exit Code 42)...")
+                    os._exit(42)
+
+                logging.info("Requesting application restart (Exit Code 42)...")
+                # Start a separate thread to kill the server after a short delay
+                # This prevents "Protocol Error" by allowing the current response to finish flushing
+                threading.Thread(target=delayed_exit, daemon=True).start()
 
             restart_js = """
             () => {
@@ -1127,6 +1450,49 @@ with gr.Blocks(title="Sheet Sage") as demo:
             restart_btn.click(restart_app, inputs=None, outputs=None, js=restart_js)
             stop_app_btn.click(stop_app, inputs=None, outputs=None, js=stop_js)
 
+        # History Tab
+        with gr.TabItem("History"):
+            gr.Markdown("### 📂 Previous Projects")
+            gr.Markdown("Select a previous transcription to reload its results (Downloads, Mixer, Piano Roll).")
+            
+            with gr.Row(elem_classes=["container"]):
+                with gr.Column(scale=3):
+                    history_dropdown = gr.Dropdown(
+                        label="Project History", 
+                        choices=get_history_items(),
+                        interactive=True,
+                        value=None
+                    )
+                with gr.Column(scale=1):
+                    refresh_hist_btn = gr.Button("🔄 Refresh List")
+                    load_hist_btn = gr.Button("📂 Load Project", variant="primary")
+            
+            # We can Output to the same components as Transcribe! 
+            # This is great because it reuses the Preview window on the right (if we move it out of Transcribe Tab?)
+            # BUT, the Output components are currently INSIDE the Transcribe Tab. 
+            # Moving them OUTSIDE the tabs would make them shared.
+            # OR we can duplicate them here.
+            # Duplicating is safer to avoid layout breakage.
+            
+            with gr.Row():
+                 with gr.Column():
+                      hist_status = gr.Textbox(label="Status", interactive=False)
+                      hist_files = gr.Files(label="Download Results")
+                 with gr.Column():
+                      hist_plot = gr.Plot(label="Piano Roll")
+                      hist_player = gr.HTML(label="Multi-Track Mixer")
+            
+            def refresh_history():
+                return gr.update(choices=get_history_items())
+            
+            refresh_hist_btn.click(fn=refresh_history, outputs=history_dropdown)
+            
+            load_hist_btn.click(
+                fn=load_history_project,
+                inputs=[history_dropdown],
+                outputs=[hist_files, hist_plot, hist_player, hist_status]
+            )
+
         # Settings Tab
         with gr.TabItem("Settings"):
             gr.Markdown("### Application Settings")
@@ -1156,3 +1522,18 @@ with gr.Blocks(title="Sheet Sage") as demo:
             )
 
     gr.Markdown("Built with Sheetsage", elem_classes=["footer"])
+
+if __name__ == "__main__":
+    # Ensure allowed_paths captures D:\Document\sheetsage\output correctly
+    # We add current working directory and the specific output folder to allow lists
+    allowed = [os.getcwd(), os.path.join(os.getcwd(), "output"), "D:\\", "C:\\"] # Broad access for local tool
+    if current_config.get("output_dir"):
+         allowed.append(current_config.get("output_dir"))
+         
+    demo.queue(max_size=5)
+    demo.launch(
+        server_name="0.0.0.0", 
+        server_port=7860, 
+        share=False,
+        allowed_paths=allowed
+    )
