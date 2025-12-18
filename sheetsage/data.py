@@ -73,7 +73,15 @@ class MelodyTranscriptionExample:
     """
     Represents a melody transcription example including the audio segment and melody notes.
     """
-    def __init__(self, segment_start, segment_end, melody, uid=None, audio_tag=None):
+    def __init__(
+        self,
+        segment_start,
+        segment_end,
+        melody,
+        uid=None,
+        audio_tag=None,
+        beat_times=None,
+    ):
         """
         Initializes a MelodyTranscriptionExample.
 
@@ -83,6 +91,7 @@ class MelodyTranscriptionExample:
             melody (list[Note]): List of Note objects representing the melody.
             uid (str, optional): Unique identifier for the example. Defaults to None.
             audio_tag (str, optional): Tag identifying the audio source. Defaults to None.
+            beat_times (list[float], optional): List of beat timestamps. Defaults to None.
 
         Raises:
             TypeError: If argument types are incorrect.
@@ -93,6 +102,8 @@ class MelodyTranscriptionExample:
         if not isinstance(segment_end, float):
             raise TypeError()
         if not all(isinstance(n, Note) for n in melody):
+            raise TypeError()
+        if beat_times is not None and not all(isinstance(b, float) for b in beat_times):
             raise TypeError()
         if segment_start < 0:
             raise ValueError("Segment start is negative")
@@ -122,6 +133,7 @@ class MelodyTranscriptionExample:
         self.melody = melody
         self.uid = uid
         self.audio_tag = audio_tag
+        self.beat_times = beat_times
 
     @classmethod
     def from_midi(
@@ -396,7 +408,9 @@ def iter_hooktheory(
         assert alignment_ is not None and len(alignment_["times"]) >= 2
         beat_to_time = create_beat_to_time_fn(alignment_["beats"], alignment_["times"])
         segment_start = float(beat_to_time(0))
-        segment_end = float(beat_to_time(attrs["annotations"]["num_beats"]))
+        num_beats = attrs["annotations"]["num_beats"]
+        segment_end = float(beat_to_time(num_beats))
+        beat_times = [float(beat_to_time(b)) for b in range(num_beats + 1)]
 
         melody = attrs["annotations"]["melody"]
         assert melody is not None and len(melody) > 0
@@ -415,4 +429,5 @@ def iter_hooktheory(
             segment_start=segment_start,
             segment_end=segment_end,
             melody=melody,
+            beat_times=beat_times,
         )
