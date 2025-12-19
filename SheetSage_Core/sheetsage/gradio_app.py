@@ -90,15 +90,18 @@ def transcribe_audio_piano(audio_file, progress=gr.Progress()):
              if mixed_audio_path:
                   output_files_list.append(mixed_audio_path)
 
-        # Cache properly
-        orig_cached = cache_file_for_playback(original_audio_segment_path if original_audio_segment_path else audio_file)
-        synth_cached = cache_file_for_playback(synthesized_audio_path)
-        
-        return output_files_list, None, orig_cached, synth_cached, "Transcription successful!"
+        # Prepare Tracks
+        tracks_dict = {}
+        if original_audio_segment_path or audio_file:
+             tracks_dict["Original"] = cache_file_for_playback(original_audio_segment_path if original_audio_segment_path else audio_file)
+        if synthesized_audio_path:
+             tracks_dict["Synthesized"] = cache_file_for_playback(synthesized_audio_path)
+             
+        return format_player_output(output_files_list, None, tracks_dict, "Transcription successful!")
 
     except Exception as e:
         logging.exception("Error during piano transcription")
-        return None, None, None, f"Error: {str(e)}"
+        return format_player_output(None, None, {}, f"Error: {e}")
 
 from sheetsage.config_manager import load_config, save_config
 
@@ -174,7 +177,7 @@ def load_history_project(selected_item):
     Loads results from a selected history item back into the interface.
     """
     if not selected_item:
-        return None, None, None, "No item selected."
+        return format_player_output(None, None, {}, "No item selected.")
 
     try:
         # Parse path
@@ -187,7 +190,7 @@ def load_history_project(selected_item):
         project_dir = os.path.join(base_output_dir, rel_path)
         
         if not os.path.exists(project_dir):
-            return None, None, None, "Project directory not found."
+            return format_player_output(None, None, {}, "Project directory not found.")
 
         # Security check: Ensure project_dir is inside base_output_dir
         # Resolve absolute paths to handle '..' correctly
@@ -201,7 +204,7 @@ def load_history_project(selected_item):
                   raise ValueError("Path outside base directory")
         except ValueError:
              logging.warning(f"Security Alert: Path traversal attempt blocked. {abs_project} is not in {abs_base}")
-             return None, None, None, "Invalid project path."
+             return format_player_output(None, None, {}, "Invalid project path.")
             
         files = [os.path.join(project_dir, f) for f in os.listdir(project_dir) if os.path.isfile(os.path.join(project_dir, f))]
         
@@ -267,10 +270,15 @@ def load_history_project(selected_item):
             except Exception as e:
                 logging.warning(f"Failed to plot piano roll from history: {e}")
 
-        return download_files, fig, orig_cached, synth_cached, f"Loaded project: {rel_path}"
+        tracks_dict = {}
+        if orig_cached: tracks_dict["Original"] = orig_cached
+        if synth_cached: tracks_dict["Synthesized"] = synth_cached
+        if vocals_path: tracks_dict["Vocals"] = cache_file_for_playback(vocals_path) # Cache here if not already cached
+
+        return format_player_output(download_files, fig, tracks_dict, f"Loaded project: {rel_path}")
         
     except Exception as e:
-        return None, None, None, None, f"Error loading history: {e}"
+        return format_player_output(None, None, {}, f"Error loading history: {e}")
 
 def plot_piano_roll(lead_sheet):
     """
@@ -628,15 +636,20 @@ def transcribe_audio_lead_sheet(
         if not any(f.endswith(".pdf") for f in output_files_list):
              status += " (PDF failed)"
 
-        # Cache for playback safety
-        orig_cached = cache_file_for_playback(original_audio_segment_path if original_audio_segment_path else audio_path_or_url)
-        synth_cached = cache_file_for_playback(synthesized_audio_path)
-        
-        return output_files_list, fig, orig_cached, synth_cached, status
+        # Prepare Audio Tracks
+        tracks_dict = {}
+        if original_audio_segment_path or audio_path_or_url:
+            tracks_dict["Original"] = cache_file_for_playback(original_audio_segment_path if original_audio_segment_path else audio_path_or_url)
+        if synthesized_audio_path:
+            tracks_dict["Synthesized"] = cache_file_for_playback(synthesized_audio_path)
+        if demucs_vocals_path and os.path.exists(demucs_vocals_path):
+             tracks_dict["Vocals (Separated)"] = cache_file_for_playback(demucs_vocals_path)
+             
+        return format_player_output(output_files_list, fig, tracks_dict, status)
 
     except Exception as e:
         logging.exception("Error during transcription")
-        return None, None, None, f"Error: {str(e)}"
+        return format_player_output(None, None, {}, f"Error: {e}")
 
 def generate_mixer_html(orig_path, synth_path, vocals_path=None):
     """
@@ -1089,18 +1102,41 @@ def transcribe_audio_basic_pitch(
         status_str = "Basic Pitch transcription finished successfully."
         
         # Generate Mixer HTML
-        # Generator Mixer HTML -> Native Gradio Audio
-        orig_cached = cache_file_for_playback(original_audio_segment_path if original_audio_segment_path else target_audio_path)
-        synth_cached = cache_file_for_playback(synthesized_audio_path)
+        # Prepare Tracks
+        tracks_dict = {}
+        if original_audio_segment_path or audio_file:
+             tracks_dict["Original"] = cache_file_for_playback(original_audio_segment_path if original_audio_segment_path else target_audio_path)
+        if synthesized_audio_path:
+             tracks_dict["Synthesized"] = cache_file_for_playback(synthesized_audio_path)
         
-        return output_files_list, None, orig_cached, synth_cached, "Transcription successful!"
+        return format_player_output(output_files_list, None, tracks_dict, "Transcription successful!")
 
     except Exception as e:
         logging.exception("Error during basic pitch transcription")
-        return None, None, None, f"Error: {str(e)}"
+        return format_player_output(None, None, {}, f"Error: {e}")
 
-# Rename for backward compatibility or simple renaming
+# Handle Rename
 transcribe_audio = transcribe_audio_lead_sheet
+
+def update_audio_player(selected_track, tracks_dict):
+    if not tracks_dict or selected_track not in tracks_dict:
+        return None
+    return tracks_dict.get(selected_track)
+
+def format_player_output(files, fig, tracks_dict, status):
+    if not tracks_dict: tracks_dict = {}
+    choices = list(tracks_dict.keys())
+    # Sort choices to have Original first, then Synth, then Vocals
+    def sort_key(k):
+        if "Original" in k: return 0
+        if "Synthesized" in k: return 1
+        return 2
+    choices.sort(key=sort_key)
+    
+    val = choices[0] if choices else None
+    path = tracks_dict.get(val) if val else None
+    
+    return files, fig, tracks_dict, status, gr.update(choices=choices, value=val), path
 
 # Unified Transcriber Handler
 def unified_transcriber(
@@ -1127,12 +1163,12 @@ def unified_transcriber(
         if audio_file is None:
             msg = f"Please upload an audio file for {mode}."
             gr.Warning(msg)
-            return None, None, None, msg
+            return format_player_output(None, None, {}, msg)
     else: # Lead Sheet
         if audio_file is None and (audio_url is None or not audio_url.strip()):
             msg = "Please upload an audio file or provide a URL."
             gr.Warning(msg)
-            return None, None, None, msg
+            return format_player_output(None, None, {}, msg)
 
     if mode == "Piano (Polyphonic)":
         return transcribe_audio_piano(audio_file, progress=progress)
@@ -1309,8 +1345,16 @@ with gr.Blocks(title="Sheet Sage") as demo:
 
                     with gr.Accordion("Preview", open=True):
                          piano_roll_plot = gr.Plot(label="Piano Roll Visualization")
-                         audio_orig_preview = gr.Audio(label="Original Audio Sample", type="filepath")
-                         audio_synth_preview = gr.Audio(label="Synthesized Transcription Result", type="filepath")
+                         with gr.Row():
+                              transcribe_track_selector = gr.Dropdown(label="Select Track", choices=[], interactive=True, scale=1)
+                              transcribe_main_player = gr.Audio(label="Audio Player", type="filepath", interactive=False, scale=3)
+                         transcribe_tracks_state = gr.State({})
+
+                    transcribe_track_selector.change(
+                         fn=update_audio_player,
+                         inputs=[transcribe_track_selector, transcribe_tracks_state],
+                         outputs=transcribe_main_player
+                    )
 
             submit_event = submit_btn.click(
                 unified_transcriber,
@@ -1323,7 +1367,7 @@ with gr.Blocks(title="Sheet Sage") as demo:
                     detect_melody, detect_harmony, legacy_behavior, separate_vocals,
                     generate_pdf
                 ],
-                outputs=[output_files, piano_roll_plot, audio_orig_preview, audio_synth_preview, status_msg],
+                outputs=[output_files, piano_roll_plot, transcribe_tracks_state, status_msg, transcribe_track_selector, transcribe_main_player],
             )
             cancel_btn.click(fn=None, inputs=None, outputs=None, cancels=[submit_event])
             
@@ -1460,8 +1504,16 @@ with gr.Blocks(title="Sheet Sage") as demo:
                       hist_files = gr.Files(label="Download Results")
                  with gr.Column():
                       hist_plot = gr.Plot(label="Piano Roll")
-                      hist_audio_orig = gr.Audio(label="Original Audio Sample", type="filepath")
-                      hist_audio_synth = gr.Audio(label="Synthesized Transcription Result", type="filepath")
+                      with gr.Row():
+                           hist_track_selector = gr.Dropdown(label="Select Track", choices=[], interactive=True, scale=1)
+                           hist_main_player = gr.Audio(label="Audio Player", type="filepath", interactive=False, scale=3)
+                      hist_tracks_state = gr.State({})
+
+            hist_track_selector.change(
+                 fn=update_audio_player,
+                 inputs=[hist_track_selector, hist_tracks_state],
+                 outputs=hist_main_player
+            )
             
             def refresh_history():
                 return gr.update(choices=get_history_items())
@@ -1471,7 +1523,7 @@ with gr.Blocks(title="Sheet Sage") as demo:
             load_hist_btn.click(
                 fn=load_history_project,
                 inputs=[history_dropdown],
-                outputs=[hist_files, hist_plot, hist_audio_orig, hist_audio_synth, hist_status]
+                outputs=[hist_files, hist_plot, hist_tracks_state, hist_status, hist_track_selector, hist_main_player]
             )
 
         # Settings Tab
