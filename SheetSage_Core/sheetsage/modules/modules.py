@@ -184,6 +184,7 @@ class TransformerEncoder(Encoder):
             dim_feedforward=feedforward_dim,
             dropout=dropout_p,
             activation="relu",
+            batch_first=True,
         )
         transformer_norm = nn.modules.normalization.LayerNorm(model_dim)
         self.transformer = nn.modules.TransformerEncoder(
@@ -210,7 +211,15 @@ class TransformerEncoder(Encoder):
         # NOTE: True means *do* mask that position
         src_key_padding_mask = seq_idxs >= src_len.unsqueeze(1)
 
-        return self.transformer(src_emb, src_key_padding_mask=src_key_padding_mask)
+        # Transpose for batch_first=True
+        src_emb = src_emb.permute(1, 0, 2)
+
+        output = self.transformer(src_emb, src_key_padding_mask=src_key_padding_mask)
+
+        # Transpose back
+        output = output.permute(1, 0, 2)
+
+        return output
 
 
 class Decoder(nn.Module):

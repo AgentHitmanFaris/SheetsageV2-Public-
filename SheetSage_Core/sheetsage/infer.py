@@ -483,10 +483,16 @@ def _transcribe_chunks(
                 batch_src = torch.from_numpy(batch_src).to(device)
                 batch_src_len = torch.from_numpy(batch_src_len).to(device)
 
-                batch_melody_logits = melody_model(
-                    batch_src, batch_src_len, None, None
-                )
-                batch_melody_logits_np = batch_melody_logits.cpu().numpy()
+                if device.type == "cuda":
+                    with torch.amp.autocast("cuda"):
+                        batch_melody_logits = melody_model(
+                            batch_src, batch_src_len, None, None
+                        )
+                else:
+                    batch_melody_logits = melody_model(
+                        batch_src, batch_src_len, None, None
+                    )
+                batch_melody_logits_np = batch_melody_logits.float().cpu().numpy()
                 for j in range(curr_batch_size):
                     melody_logits.append(batch_melody_logits_np[: batch_src_len[j], j])
 
@@ -519,10 +525,16 @@ def _transcribe_chunks(
                 batch_src = torch.from_numpy(batch_src).to(device)
                 batch_src_len = torch.from_numpy(batch_src_len).to(device)
 
-                batch_harmony_logits = harmony_model(
-                    batch_src, batch_src_len, None, None
-                )
-                batch_harmony_logits_np = batch_harmony_logits.cpu().numpy()
+                if device.type == "cuda":
+                    with torch.amp.autocast("cuda"):
+                        batch_harmony_logits = harmony_model(
+                            batch_src, batch_src_len, None, None
+                        )
+                else:
+                    batch_harmony_logits = harmony_model(
+                        batch_src, batch_src_len, None, None
+                    )
+                batch_harmony_logits_np = batch_harmony_logits.float().cpu().numpy()
                 for j in range(curr_batch_size):
                     harmony_logits.append(
                         batch_harmony_logits_np[: batch_src_len[j], j]
