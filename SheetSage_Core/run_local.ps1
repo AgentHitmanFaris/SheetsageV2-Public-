@@ -1,7 +1,7 @@
 # Run script for Windows
 $ErrorActionPreference = "Stop"
 
-$RootDir = (Get-Item (Get-Location).Parent).FullName
+$RootDir = Split-Path -Parent $PSScriptRoot
 $VenvDir = ".venv"
 $PythonEmbeded = Join-Path $RootDir "python_embeded"
 $BinDir = Join-Path $RootDir "bin"
