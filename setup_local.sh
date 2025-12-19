@@ -99,17 +99,16 @@ echo "--- 3. Installing Python Dependencies ---"
 PY_VERSION=$(python -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')
 echo "Python version: $PY_VERSION"
 
-if [[ "$PY_VERSION" != "3.6" && "$PY_VERSION" != "3.7" && "$PY_VERSION" != "3.8" ]]; then
+if [[ "$PY_VERSION" == "3.6" ]]; then
     echo "⚠️  Warning: Active Python version is $PY_VERSION."
-    echo "This project targets Python 3.6. Newer versions may have issues with 'torch==1.4.0'."
-    echo "Attempting installation anyway..."
+    echo "PyTorch 2.x typically requires Python 3.8+. Proceeding, but upgrade recommended."
 fi
 
 # Install requirements
 pip install -r requirements.txt || {
     echo "❌ Dependencies failed to install."
-    echo "This is likely due to version mismatch with older libraries (torch 1.4)."
-    echo "You may need to edit 'requirements.txt' to use newer versions compatible with your system."
+    echo "This might be due to a version mismatch."
+    echo "Please ensure you have Python 3.8+ and necessary system tools."
     read -p "Continue anyway (e.g. if you fixed it manually)? (y/N) " -n 1 -r
     echo
     if [[ ! $REPLY =~ ^[Yy]$ ]]; then

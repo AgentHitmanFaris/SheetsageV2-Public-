@@ -1,5 +1,5 @@
 # Import Ubuntu/CUDA/cuDNN
-FROM nvidia/cuda:10.1-cudnn7-devel-ubuntu18.04
+FROM nvidia/cuda:12.1.1-cudnn8-devel-ubuntu22.04
 
 # Configure shell
 ENV DEBIAN_FRONTEND=noninteractive
@@ -10,7 +10,7 @@ RUN apt-get update --fix-missing
 ENV LANG C.UTF-8
 RUN apt-get install -y python3 python3-dev python3-pip
 RUN ln -s $(which python3) /usr/local/bin/python
-RUN python -m pip install --no-cache-dir --upgrade "pip<20.3" setuptools
+RUN python -m pip install --no-cache-dir --upgrade pip setuptools
 
 # Install dev deps
 RUN python -m pip install --no-cache-dir jupyter matplotlib
@@ -23,11 +23,10 @@ RUN \
 	&& apt-get install -y ffmpeg
 
 # Install Jukebox
-RUN python -m pip install --no-cache-dir torch==1.4.0+cu101 -f https://nelsonliu.me/files/pytorch/whl/torch_stable.html
-RUN python -m pip install --no-cache-dir numba==0.48
-RUN python -m pip install --no-cache-dir resampy==0.2.2
-RUN python -m pip install --no-cache-dir librosa==0.7.2
-ENV NUMBA_CACHE_DIR /tmp/numba
+# Install Jukebox deps (modern)
+# Note: Jukebox usually requires older torch, but we are attempting to use it with 2.8.0 or skipping if incompatible.
+# RUN python -m pip install --no-cache-dir torch==1.4.0+cu101 ... (Removed)
+RUN apt-get install -y libsndfile1
 RUN apt-get install -y libopenmpi-dev
 RUN apt-get install -y openssh-server
 RUN python -m pip install --no-cache-dir mpi4py==3.0.3
