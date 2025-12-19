@@ -1,12 +1,13 @@
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
 ## [v0.3.4] - 2025-12-19
 
 ### Improved
 - **Model Efficiency**: Optimized model inference for better performance on consumer GPUs (e.g., GTX 1060 6GB).
     - **VRAM Reduction**: Implemented Automatic Mixed Precision (AMP) using `torch.amp.autocast("cuda")` in `sheetsage/infer.py` to significantly reduce VRAM usage during inference.
     - **Compute Optimization**: Enabled `batch_first=True` for `TransformerEncoder` in `sheetsage/modules/modules.py` to improve memory access patterns and inference speed on CUDA devices.
-# Changelog
-
-All notable changes to this project will be documented in this file.
 
 ## [v0.3.3] - 2025-12-18
 
