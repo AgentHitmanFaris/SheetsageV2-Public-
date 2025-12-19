@@ -1,10 +1,11 @@
 # Setup script for Windows
 $ErrorActionPreference = "Stop"
 
+$RootDir = (Get-Item (Get-Location).Parent).FullName
 $VenvDir = ".venv"
-$PythonEmbeded = Join-Path (Get-Location) "python_embeded"
-$BinDir = Join-Path (Get-Location) "bin"
-$CacheDir = Join-Path (Get-Location) "cache"
+$PythonEmbeded = Join-Path $RootDir "python_embeded"
+$BinDir = Join-Path $RootDir "bin"
+$CacheDir = Join-Path $RootDir "cache"
 
 # Add local bin to PATH strictly for this session so we can find portable tools
 if (-not (Test-Path $BinDir)) {
@@ -77,7 +78,7 @@ try {
 # --- 1. System Dependencies ---
 Write-Host "--- 1. Checking & Installing System Dependencies ---"
 
-$LibsDir = Join-Path (Get-Location) "libs"
+$LibsDir = Join-Path $RootDir "libs"
 if (-not (Test-Path $LibsDir)) { New-Item -ItemType Directory -Path $LibsDir -Force | Out-Null }
 
 function Download-And-Extract {

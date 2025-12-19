@@ -1,10 +1,11 @@
 # Run script for Windows
 $ErrorActionPreference = "Stop"
 
+$RootDir = (Get-Item (Get-Location).Parent).FullName
 $VenvDir = ".venv"
-$PythonEmbeded = Join-Path (Get-Location) "python_embeded"
-$BinDir = Join-Path (Get-Location) "bin"
-$CacheDir = Join-Path (Get-Location) "cache"
+$PythonEmbeded = Join-Path $RootDir "python_embeded"
+$BinDir = Join-Path $RootDir "bin"
+$CacheDir = Join-Path $RootDir "cache"
 
 # 1. Try to find Embedded Python (Fooocus style)
 if (Test-Path $PythonEmbeded) {
@@ -27,7 +28,7 @@ else {
 $Env:Path = "$BinDir;$Env:Path"
 
 # Add libs to PATH (LilyPond, GCC, etc.)
-$LibsDir = Join-Path (Get-Location) "libs"
+$LibsDir = Join-Path $RootDir "libs"
 if (Test-Path $LibsDir) {
     # Find LilyPond bin
     $LilyBin = Get-ChildItem -Path $LibsDir -Recurse -Filter "lilypond.exe" | Select-Object -ExpandProperty DirectoryName -First 1
@@ -45,7 +46,7 @@ if (Test-Path $LibsDir) {
 }
 
 # Set cache dir: Use local .sheetsage if it exists (user provided models), else use default 'cache'
-$LocalModels = Join-Path (Get-Location) ".sheetsage"
+$LocalModels = Join-Path $RootDir ".sheetsage"
 if (Test-Path $LocalModels) {
     Write-Host "Found local models in '.sheetsage'. Using them."
     $Env:SHEETSAGE_CACHE_DIR = $LocalModels
