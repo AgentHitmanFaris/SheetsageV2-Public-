@@ -6,7 +6,7 @@ with open("requirements.txt") as f:
 # Filter out git dependencies and comments for install_requires
 install_requires = [
     req for req in requirements
-    if req and not req.startswith("#") and not req.startswith("git+")
+    if req and not req.startswith("#") and not req.startswith("git+") and not req.startswith("-")
 ]
 
 setup(

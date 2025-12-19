@@ -1,8 +1,8 @@
 # Hardware-specific (Check your CUDA version)
-torch==2.9.1+cu121
-torchaudio==2.9.1+cu121
-torchvision==0.24.1+cu121
---extra-index-url https://download.pytorch.org/whl/cu121
+torch==2.9.1+cu126
+torchaudio==2.9.1+cu126
+torchvision==0.24.1+cu126
+--extra-index-url https://download.pytorch.org/whl/cu126
 
 # Core Application
 gradio==6.1.0
@@ -15,8 +15,8 @@ validators
 
 # Transcription Models
 basic-pitch==0.4.0
-piano_transcription_inference>=0.0.7
-demucs>=4.1.0
+piano_transcription_inference>=0.0.6
+demucs==4.0.1
 transformers>=4.48.0
 accelerate>=1.1.0
 sentencepiece
