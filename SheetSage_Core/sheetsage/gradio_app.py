@@ -94,6 +94,8 @@ def transcribe_audio_piano(audio_file, progress=gr.Progress()):
         tracks_dict = {}
         if original_audio_segment_path or audio_file:
              tracks_dict["Original"] = cache_file_for_playback(original_audio_segment_path if original_audio_segment_path else audio_file)
+        if mixed_audio_path:
+             tracks_dict["Mixed"] = cache_file_for_playback(mixed_audio_path)
         if synthesized_audio_path:
              tracks_dict["Synthesized"] = cache_file_for_playback(synthesized_audio_path)
              
@@ -222,6 +224,9 @@ def load_history_project(selected_item):
              # Fallback to anything with "original"
              orig_path = next((f for f in files if "original" in f and f.endswith(".wav")), None)
         
+        # Mixed
+        mix_path = next((f for f in files if "output_mixed.wav" in f), None)
+
         # Synth
         # "piano_synth.wav", "basic_pitch_synth.wav"
         synth_path = next((f for f in files if "synth" in f and f.endswith(".wav")), None)
@@ -230,11 +235,6 @@ def load_history_project(selected_item):
         # "vocals.wav" usually from demucs
         # For history, we might need to look deeper if it's the main project folder
         vocals_path = next((f for f in files if "vocals" in f and f.endswith(".wav")), None)
-        
-        # CACHE FILES FOR PLAYBACK (Fix 404s)
-        # We copy them to a known safe location with simple names
-        orig_cached = cache_file_for_playback(orig_path)
-        synth_cached = cache_file_for_playback(synth_path)
         
         # 3. Piano Roll
         fig = None
@@ -266,14 +266,26 @@ def load_history_project(selected_item):
                     fig.tight_layout()
                 else:
                     ax.text(0.5, 0.5, "Empty MIDI", ha='center', va='center')
-                    
             except Exception as e:
-                logging.warning(f"Failed to plot piano roll from history: {e}")
-
+                 logging.warning(f"Failed to plot piano roll from history: {e}")
+        # Vocals and other stems
+        # Look for exact matches "vocals.wav", "bass.wav", "drums.wav", "other.wav"
+        stems_map = {
+            "Vocals": "vocals.wav",
+            "Bass": "bass.wav", 
+            "Drums": "drums.wav", 
+            "Other": "other.wav"
+        }
+        
         tracks_dict = {}
-        if orig_cached: tracks_dict["Original"] = orig_cached
-        if synth_cached: tracks_dict["Synthesized"] = synth_cached
-        if vocals_path: tracks_dict["Vocals"] = cache_file_for_playback(vocals_path) # Cache here if not already cached
+        if orig_path: tracks_dict["Original"] = cache_file_for_playback(orig_path)
+        if mix_path: tracks_dict["Mixed"] = cache_file_for_playback(mix_path)
+        if synth_path: tracks_dict["Synthesized"] = cache_file_for_playback(synth_path)
+        
+        for label, filename in stems_map.items():
+            found = next((f for f in files if os.path.basename(f) == filename), None)
+            if found:
+                tracks_dict[label] = cache_file_for_playback(found)
 
         return format_player_output(download_files, fig, tracks_dict, f"Loaded project: {rel_path}")
         
@@ -640,10 +652,20 @@ def transcribe_audio_lead_sheet(
         tracks_dict = {}
         if original_audio_segment_path or audio_path_or_url:
             tracks_dict["Original"] = cache_file_for_playback(original_audio_segment_path if original_audio_segment_path else audio_path_or_url)
+        if mixed_audio_path:
+            tracks_dict["Mixed"] = cache_file_for_playback(mixed_audio_path)
         if synthesized_audio_path:
             tracks_dict["Synthesized"] = cache_file_for_playback(synthesized_audio_path)
+            
+        # Demucs Stems
         if demucs_vocals_path and os.path.exists(demucs_vocals_path):
-             tracks_dict["Vocals (Separated)"] = cache_file_for_playback(demucs_vocals_path)
+             tracks_dict["Vocals"] = cache_file_for_playback(demucs_vocals_path)
+             # Check for other stems (bass, drums, other)
+             parent_dir = os.path.dirname(demucs_vocals_path)
+             for stem in ["bass.wav", "drums.wav", "other.wav"]:
+                  stem_path = os.path.join(parent_dir, stem)
+                  if os.path.exists(stem_path):
+                       tracks_dict[stem.replace(".wav", "").capitalize()] = cache_file_for_playback(stem_path)
              
         return format_player_output(output_files_list, fig, tracks_dict, status)
 
@@ -1106,6 +1128,8 @@ def transcribe_audio_basic_pitch(
         tracks_dict = {}
         if original_audio_segment_path or audio_file:
              tracks_dict["Original"] = cache_file_for_playback(original_audio_segment_path if original_audio_segment_path else target_audio_path)
+        if mixed_audio_path:
+             tracks_dict["Mixed"] = cache_file_for_playback(mixed_audio_path)
         if synthesized_audio_path:
              tracks_dict["Synthesized"] = cache_file_for_playback(synthesized_audio_path)
         
