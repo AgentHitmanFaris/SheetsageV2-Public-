@@ -194,6 +194,20 @@ def load_history_project(selected_item):
         
         if not os.path.exists(project_dir):
             return None, None, None, "Project directory not found."
+
+        # Security check: Ensure project_dir is inside base_output_dir
+        # Resolve absolute paths to handle '..' correctly
+        abs_base = os.path.abspath(base_output_dir)
+        abs_project = os.path.abspath(project_dir)
+
+        # Robust check using commonpath to prevent partial path traversal
+        try:
+             # commonpath raises ValueError if paths are on different drives
+             if os.path.commonpath([abs_base, abs_project]) != abs_base:
+                  raise ValueError("Path outside base directory")
+        except ValueError:
+             logging.warning(f"Security Alert: Path traversal attempt blocked. {abs_project} is not in {abs_base}")
+             return None, None, None, "Invalid project path."
             
         files = [os.path.join(project_dir, f) for f in os.listdir(project_dir) if os.path.isfile(os.path.join(project_dir, f))]
         
