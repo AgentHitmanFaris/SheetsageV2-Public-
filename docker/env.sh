@@ -1,3 +1,0 @@
-DOCKER_NAMESPACE=chrisdonahue
-DOCKER_NAME=sheetsage
-DOCKER_TAG=sheetsage

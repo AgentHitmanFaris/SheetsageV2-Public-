@@ -13,11 +13,14 @@ Sheet Sage is an AI-powered tool that transcribes music audio into lead sheets (
 
 ## Installation & Setup
 
+Sheet Sage depends on a few heavy-weight libraries (PyTorch 2.x, FluidSynth, LilyPond, FFmpeg).
+We provide a **One-Click Setup Script** to handle everything automatically.
+
 ### Prerequisites
 *   **Windows 10/11** (Currently optimized for Windows)
-*   **NVIDIA GPU** (Recommended for reasonable speed, though CPU is supported)
-*   **Python 3.11** (Managed automatically via the setup script)
+*   **NVIDIA GPU** (Highly Recommended for fast transcription)
 *   **Git** installed and available in PATH.
+*   *Note: Python is embedded and managed automatically by the setup script.*
 
 ### One-Click Setup
 1.  **Clone the Repository**:
@@ -33,7 +36,7 @@ Sheet Sage is an AI-powered tool that transcribes music audio into lead sheets (
     ```
     This script will:
     *   Download a portable Python 3.11 environment.
-    *   Install all Python dependencies (including PyTorch with CUDA support).
+    *   Install all Python dependencies (including PyTorch 2.8.0 with CUDA 12.1).
     *   Download necessary system tools (FFmpeg, FluidSynth, LilyPond) into the project folder.
     *   **Note**: The setup might take a while as it downloads large machine learning models.
 
