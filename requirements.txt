@@ -4,7 +4,7 @@ torchvision==0.20.1+cu121
 --extra-index-url https://download.pytorch.org/whl/cu121
 
 # Core Application
-gradio==5.9.1
+gradio==5.31.0
 numpy>=1.22
 scipy
 librosa
