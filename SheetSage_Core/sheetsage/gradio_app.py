@@ -16,6 +16,11 @@ from scipy.io import wavfile
 import pretty_midi
 import librosa
 import torch
+import torchaudio
+try:
+    torchaudio.set_audio_backend("soundfile")
+except:
+    pass
 
 from sheetsage.infer import sheetsage
 from sheetsage.utils import engrave
@@ -450,7 +455,26 @@ def transcribe_audio_lead_sheet(
             audio_path_or_url = audio_url.strip()
 
         if not audio_path_or_url:
-            return None, None, None, None, None, None, "Please provide an audio file or URL."
+            return format_player_output(None, None, {}, "Please provide an audio file or URL.")
+
+        original_display_name = None
+        if audio_file:
+             original_display_name = os.path.basename(audio_file)
+
+        # Sanitize filename for local files to avoid Unicode issues with Demucs/subprocess
+        # We process a copy with a safe ASCII name
+        if audio_file and os.path.exists(audio_file):
+            safe_dir = pathlib.Path(os.getcwd()) / "temp" / "safe_inputs"
+            safe_dir.mkdir(parents=True, exist_ok=True)
+            ext = os.path.splitext(audio_file)[1]
+            if not ext: ext = ".mp3" # Fallback
+            safe_name = f"input_{uuid.uuid4().hex[:8]}{ext}"
+            safe_path = safe_dir / safe_name
+            import shutil
+            shutil.copy(audio_file, safe_path)
+            logging.info(f"Sanitized input: {audio_path_or_url} -> {safe_path}")
+            audio_path_or_url = str(safe_path)
+            audio_file = str(safe_path) # Update reference for downstream logic
 
         # Demucs Separation (if enabled)
         if separate_vocals and audio_file:
@@ -476,7 +500,7 @@ def transcribe_audio_lead_sheet(
                 
                 # Use list arguments to avoid Windows quoting issues with shlex
                 cmd_args = [
-                    python_exe, "-m", "demucs.separate",
+                    python_exe, os.path.join("sheetsage", "run_demucs.py"),
                     "-n", "htdemucs",
                     "-o", str(sep_out_dir),
                     audio_path_or_url
@@ -497,6 +521,17 @@ def transcribe_audio_lead_sheet(
                           print(f"Using separated vocals: {vocals_path}")
                           demucs_vocals_path = str(vocals_path)
                           audio_path_melody = demucs_vocals_path
+                     else:
+                          print(f"Warning: Vocals file not found at {vocals_path}")
+                          ht_dir = sep_out_dir / "htdemucs"
+                          if ht_dir.exists():
+                               try:
+                                   files = [str(p.relative_to(ht_dir)) for p in ht_dir.glob('**/*')]
+                                   print(f"Contents of {ht_dir}: {files}")
+                               except:
+                                   print(f"Could not list contents of {ht_dir}")
+                          else:
+                               print(f"Directory {ht_dir} does not exist.")
             except Exception as e:
                 logging.error(f"Demucs error: {e}")
 
@@ -566,9 +601,20 @@ def transcribe_audio_lead_sheet(
         # Cleanup filename
         import datetime
         timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M")
-        name_src = audio_path_or_url
+        name_src = original_display_name if original_display_name else audio_path_or_url
         if not name_src: name_src = "audio"
-        clean_name = pathlib.Path(name_src).stem.replace(" ", "_").replace("(", "").replace(")", "")[:20]
+        
+        # Robust name cleaning for folder creation
+        # Remove extension
+        stem = pathlib.Path(name_src).stem
+        # Replace common delimiters with underscore
+        clean_name = stem.replace(" ", "_").replace("(", "").replace(")", "")
+        # Remove non-ascii or risky chars
+        import re
+        clean_name = re.sub(r'[^a-zA-Z0-9_\-]', '', clean_name)
+        if not clean_name: clean_name = "audio_project"
+        clean_name = clean_name[:40] #Reasonable length
+
         folder_name = f"{timestamp}_{clean_name}_{uuid.uuid4().hex[:6]}"
 
         output_dir = base_temp_dir / folder_name
