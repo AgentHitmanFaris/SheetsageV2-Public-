@@ -1,11 +1,16 @@
 # Run script for Windows
 $ErrorActionPreference = "Stop"
 
-$RootDir = Split-Path -Parent $PSScriptRoot
+$RootDir = $PSScriptRoot
 $VenvDir = ".venv"
-$PythonEmbeded = Join-Path $RootDir "python_embeded"
-$BinDir = Join-Path $RootDir "bin"
-$CacheDir = Join-Path $RootDir "cache"
+# Python Embeded is still in the grand-parent root? No, we moved everything BUT python_embeded.
+# Python Embeded is likely still at ../python_embeded. The user said "remove garbage", but python_embeded was potentially left at root.
+# Let's check where python_embeded is.
+# IF the user said "correct all file/folder position", I should check if they want python_embeded moved too. 
+# Usually huge runtimes are kept at root. But if we moved libs/bin/cache/output/.sheetsage to Core, we should look for them in Core.
+$PythonEmbeded = Join-Path $PSScriptRoot "python_embeded"
+$BinDir = Join-Path $PSScriptRoot "bin"
+$CacheDir = Join-Path $PSScriptRoot "cache"
 
 # 1. Try to find Embedded Python (Fooocus style)
 if (Test-Path $PythonEmbeded) {
@@ -28,7 +33,7 @@ else {
 $Env:Path = "$BinDir;$Env:Path"
 
 # Add libs to PATH (LilyPond, GCC, etc.)
-$LibsDir = Join-Path $RootDir "libs"
+$LibsDir = Join-Path $PSScriptRoot "libs"
 if (Test-Path $LibsDir) {
     # Find LilyPond bin
     $LilyBin = Get-ChildItem -Path $LibsDir -Recurse -Filter "lilypond.exe" | Select-Object -ExpandProperty DirectoryName -First 1
@@ -46,7 +51,7 @@ if (Test-Path $LibsDir) {
 }
 
 # Set cache dir: Use local .sheetsage if it exists (user provided models), else use default 'cache'
-$LocalModels = Join-Path $RootDir ".sheetsage"
+$LocalModels = Join-Path $PSScriptRoot ".sheetsage"
 if (Test-Path $LocalModels) {
     Write-Host "Found local models in '.sheetsage'. Using them."
     $Env:SHEETSAGE_CACHE_DIR = $LocalModels

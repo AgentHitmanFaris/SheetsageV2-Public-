@@ -1,3 +1,4 @@
+# Hardware-specific (Check your CUDA version)
 torch==2.9.1+cu121
 torchaudio==2.9.1+cu121
 torchvision==0.24.1+cu121
@@ -5,19 +6,19 @@ torchvision==0.24.1+cu121
 
 # Core Application
 gradio==6.1.0
-numpy>=1.22
-scipy
-librosa
-pretty_midi
-matplotlib
+numpy>=2.1.0  # Updated for 2025 standards
+scipy>=1.14.0
+librosa>=0.11.0
+pretty_midi>=0.2.10
+matplotlib>=3.10.0
 validators
 
 # Transcription Models
 basic-pitch==0.4.0
-piano_transcription_inference
-demucs
-transformers
-accelerate
+piano_transcription_inference>=0.0.7
+demucs>=4.1.0
+transformers>=4.48.0
+accelerate>=1.1.0
 sentencepiece
 protobuf
 
@@ -27,4 +28,4 @@ onnxruntime-gpu==1.23.2
 # Other dependencies
 requests
 tqdm
-pydub
+pydub>=0.25.1
