@@ -20,7 +20,15 @@ Sheet Sage now offers three distinct transcription modes via tabs:
     *   **Features**: Hybrid workflow. Uses **Basic Pitch** for note detection (very sensitive) and **Sheet Sage** for structural analysis (chords, measures, time signature). Generates PDF/MIDI/Audio.
 
 
-3.  **Lead Sheet (Melody + Chords)**:
+3.  **SheetSage V3 (Lunaverus)**:
+    *   **Best For**: Premium Piano transcriptions requiring "Lunaverus-style" visual accuracy.
+    *   **Features**: Uses a custom-trained CNN on the MAESTRO dataset. Optimized for GPU.
+
+4.  **Omnizart (Advanced)**:
+    *   **Best For**: Specific instruments like **Drums**, **Chords**, or **Vocals**.
+    *   **Features**: Access to the full Omnizart suite (Music, Chord, Drum, Vocal, Beat). Excellent for percussion.
+
+5.  **Lead Sheet (Melody + Chords)**:
     *   **Best For**: Songs with vocals or distinct melody lines where you want a simpler melody + chord chart.
     *   **Features**: The classic Sheet Sage V2 experience. Detects melody and harmony separately.
 

@@ -1,1 +1,21 @@
+# System
+__pycache__/
+*.pyc
 
+# Environments & Libs
+omnizart_env/
+cuda_libs/
+python_embeded/
+# libs/ # Use your judgement if this contains big binaries
+
+# Output & Cache
+output/
+cache/
+temp/
+temp_playback/
+captured_requirements.txt
+requirements_frozen.txt
+
+# IDE
+.vscode/
+.idea/

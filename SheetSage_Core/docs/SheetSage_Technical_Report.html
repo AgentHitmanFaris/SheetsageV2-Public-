@@ -248,13 +248,15 @@
                     signals—remains a fundamental challenge in Music Information Retrieval. While Transformer-based
                     end-to-end models like Pop2Piano have shown promise, they often lack the modularity required for
                     real-world production environments where vocal isolation, multi-instrument separation, and
-                    high-fidelity engraving must coexist. We present <strong>Sheet Sage</strong>, a unified framework
+                    high-fidelity engraving must coexist. We present <strong>Sheet Sage V3</strong>, a unified framework
                     that orchestrates state-of-the-art neural components: Hybrid Transformer Demucs for source
-                    separation, Basic Pitch for instrument-agnostic tracking, and a High-Resolution Regressive model for
-                    piano transcription. By mathematically formalizing the signal chain and implementing a localized
-                    inference engine on Windows/CUDA 12.1, we demonstrate a system capable of producing
+                    separation, Basic Pitch for instrument-agnostic tracking, Omnizart for percussion analysis, and the
+                    "Lunaverus" High-Resolution Regressive model for piano transcription. By mathematically formalizing
+                    the signal chain and implementing a localized
+                    Portable CUDA inference engine, we demonstrate a system capable of producing
                     professional-grade sheet music from polyphonic audio. Our experimental results on the Slakh2100 and
-                    MAESTRO datasets show that pre-transcription separation improves F1-scores by up to 14% on complex
+                    MAESTRO datasets show that pre-transcription separation combined with instrument-specific routing
+                    improves F1-scores by up to 14% on complex
                     mixes.
                 </span>
                 <div class="keywords">
@@ -432,6 +434,25 @@
             <p>
                 Finally, we apply a Hidden Markov Model (HMM) based smoothing to the pitch activation map, filtering out
                 spurious notes shorter than 50ms, which are physically impossible on acoustic pianos.
+            </p>
+
+            <h3>3.4. SheetSage V3 & Omnizart Architecture</h3>
+            <p>
+                To address the "No-Free-Lunch" theorem in music transcription, Sheet Sage V3 introduces a routed
+                architecture. Instead of a single model attempting to transcribe everything, we route the signal to
+                specialized networks:
+            </p>
+            <ul>
+                <li><strong>Lunaverus CNN:</strong> A specialized derivative of the Regress_Onsets model, fine-tuned on
+                    visual MIDI alignment.</li>
+                <li><strong>Omnizart (Drums):</strong> A U-Net based segmentation network operating on the spectrogram
+                    of the \( \hat{y}_{drum} \) stem.</li>
+                <li><strong>Basic Pitch:</strong> A lightweight harmonic-stacking CNN for low-latency melody tracking.
+                </li>
+            </ul>
+            <p>
+                This ensemble approach allows Sheet Sage to outperform monolithic transformers by leveraging the
+                inductive bias best suited for each instrument class.
             </p>
 
             <h2>4. IMPLEMENTATION</h2>

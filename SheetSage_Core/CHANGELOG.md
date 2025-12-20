@@ -2,6 +2,43 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v3.0.0] - 2025-12-20
+
+### Major Release: SheetSage V3 "Lunaverus" & Unified Architecture
+
+This major release transforms Sheet Sage into a unified MIR (Music Information Retrieval) workstation, integrating the new **Lunaverus CNN**, restoring **Omnizart** with GPU acceleration, and polishing the entire experience.
+
+### New Features
+- **SheetSage V3 (Lunaverus CNN)**:
+    - Integrated a custom-trained CNN model optimized for visual-first piano transcription.
+    - Achieves high-resolution onboarding/offset detection.
+    - Fully GPU-accelerated via Portable CUDA.
+- **Omnizart Integration (Advanced)**:
+    - Added dedicated tab for Omnizart.
+    - Supports **Music**, **Chord**, **Drum**, **Vocal**, **Beat**, and **Vocal Contour** modes.
+    - Specifically optimized specifically for **Drum Transcription** with MIDI output.
+- **Basic Pitch (Polyphonic) on GPU**:
+    - Unlocked GPU acceleration for Spotify's Basic Pitch model by removing CPU-forced environment variables.
+    - Now runs significantly faster on CUDA devices.
+- **Portable GPU Engine**:
+    - Implemented a "Zero-Install" GPU strategy.
+    - Automatically manages CUDA 11.2 and cuDNN 8.1 DLLs within the project folder.
+    - `run_local.ps1` dynamically configures the PATH, so **system-wide CUDA installation is NOT required**.
+
+### Improved
+- **Real-Time Feedback**:
+    - All transcription modes (Omnizart, Basic Pitch, SheetSage, Piano) now stream live logs to the **Gradio Progress Bar**.
+    - Added a **Terminal Timer** thread to show elapsed time in the console, preventing "is it frozen?" anxiety.
+- **Gradio Interface**:
+    - Polished Dark Mode UI.
+    - Unified tab layout.
+    - Added "Advanced Settings" accordions to declutter the interface.
+
+### Fixed
+- **Omnizart Crashes**: Fixed `ZeroDivisionError` and `IndexError` when Omnizart produced empty MIDI files.
+- **Synthesis**: Fixed `fluidsynth` DLL loading issues on Windows.
+- **Beat Tracking**: Fixed `madmom` compilation issues by properly installing VS C++ headers via `fix_omnizart_headers.ps1`.
+
 ## [v0.3.4] - 2025-12-19
 
 ### Improved

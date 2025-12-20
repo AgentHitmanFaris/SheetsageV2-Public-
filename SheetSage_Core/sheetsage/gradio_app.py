@@ -27,6 +27,8 @@ from sheetsage.utils import engrave
 from sheetsage.align import create_beat_to_time_fn
 from sheetsage.piano_transcription import transcribe_piano
 from sheetsage.basic_pitch_transcription import transcribe_basic_pitch
+from sheetsage.modules.omnizart_transcription import run_omnizart
+from sheetsage.modules.lunaverus_cnn import run_inference as run_lunaverus
 
 def transcribe_audio_piano(audio_file, progress=gr.Progress()):
     """
@@ -69,9 +71,27 @@ def transcribe_audio_piano(audio_file, progress=gr.Progress()):
 
         output_midi_path = output_dir / "transcription.midi"
 
+        import time
+        import threading
+        # Timer logic
+        start_time = time.time()
+        stop_event = threading.Event()
+        def timer_loop():
+            while not stop_event.is_set():
+                elapsed = int(time.time() - start_time)
+                if elapsed > 0 and elapsed % 2 == 0:
+                     print(f"[Piano Timer] Elapsed: {elapsed}s...", end='\r', flush=True)
+                time.sleep(1)
+        
+        t_thread = threading.Thread(target=timer_loop, daemon=True)
+        t_thread.start()
+
         # Run transcription
         progress(0.2, desc="Loading Model & Transcribing...")
         transcribe_piano(audio_file, str(output_midi_path))
+        
+        stop_event.set()
+        t_thread.join(timeout=1.0)
 
         output_files_list.append(str(output_midi_path))
 
@@ -108,6 +128,301 @@ def transcribe_audio_piano(audio_file, progress=gr.Progress()):
 
     except Exception as e:
         logging.exception("Error during piano transcription")
+        return format_player_output(None, None, {}, f"Error: {e}")
+
+def transcribe_audio_drums(audio_file, progress=gr.Progress()):
+    """
+    Transcribes drums using Omnizart (via external env).
+    """
+    output_dir = None
+    output_files_list = []
+    synthesized_audio_path = None
+    mixed_audio_path = None
+    original_audio_segment_path = None
+
+    if not audio_file:
+         return None, None, None, None, None, None, "Please upload an audio file."
+
+    logging.info("Starting Drum Transcription (Omnizart)")
+    print(f"--- Starting Drum Transcription (Omnizart) ---")
+    progress(0, desc="Initializing...")
+
+    try:
+        # Prepare output directory
+        base_output_dir = pathlib.Path(current_config.get("output_dir", os.path.join(os.getcwd(), "output")))
+        base_temp_dir = base_output_dir / "drums"
+        base_temp_dir.mkdir(parents=True, exist_ok=True)
+        
+        import datetime
+        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M")
+        clean_name = pathlib.Path(audio_file).stem.replace(" ", "_").replace("(", "").replace(")", "")[:20]
+        folder_name = f"{timestamp}_{clean_name}_{uuid.uuid4().hex[:6]}"
+        
+        output_dir = base_temp_dir / folder_name
+        output_dir.mkdir(parents=True, exist_ok=True)
+        print(f"Output directory: {output_dir}")
+
+        # Run transcription
+        progress(0.2, desc="Running Omnizart (This may take a moment)...")
+        # Omnizart directly writes MIDI to output_dir
+        
+        def omni_callback(msg):
+             progress(None, desc=f"Omnizart: {msg[:50]}")
+             
+        # Call run_omnizart with mode="drum"
+        output_midi_path = run_omnizart(
+            audio_file, 
+            str(output_dir), 
+            mode="drum", 
+            callback=omni_callback
+        )
+        
+        if not output_midi_path:
+             raise Exception("Omnizart failed to generate MIDI. Check console/logs.")
+
+        output_files_list.append(str(output_midi_path))
+        print(f"Omnizart output: {output_midi_path}")
+
+        # Synthesize Audio (Drums usually need a drum soundfont or General MIDI channel 10)
+        # FluidSynth uses Channel 10 for drums. PrettyMIDI might not default to Ch 10 unless the MIDI file specifies it.
+        # Omnizart likely produces a MIDI file with Program 0 on Channel 9 (0-indexed).
+        
+        progress(0.8, desc="Synthesizing Audio...")
+        # Use config soundfont or default
+        soundfont_path = current_config.get("soundfont_path", "")
+        if not soundfont_path or not os.path.exists(soundfont_path):
+             soundfont_path = os.path.join(os.getcwd(), "soundfont", "MS Basic.sf3")
+
+        # Synthesize
+        synthesized_audio_path = synthesize_midi(str(output_midi_path), soundfont_path, output_dir, filename="drums_synth.wav")
+        if synthesized_audio_path:
+             output_files_list.append(synthesized_audio_path)
+             
+             # Mix
+             mixed_audio_path, original_audio_segment_path = create_mix(
+                  audio_file,
+                  synthesized_audio_path,
+                  output_dir
+             )
+             if mixed_audio_path:
+                  output_files_list.append(mixed_audio_path)
+
+        # Prepare Tracks
+        tracks_dict = {}
+        if original_audio_segment_path or audio_file:
+             tracks_dict["Original"] = cache_file_for_playback(original_audio_segment_path if original_audio_segment_path else audio_file)
+        if mixed_audio_path:
+             tracks_dict["Mixed"] = cache_file_for_playback(mixed_audio_path)
+        if synthesized_audio_path:
+             tracks_dict["Synthesized"] = cache_file_for_playback(synthesized_audio_path)
+             
+        return format_player_output(output_files_list, None, tracks_dict, "Drum Transcription successful!")
+
+    except Exception as e:
+        logging.exception("Error during drum transcription")
+        return format_player_output(None, None, {}, f"Error: {e}")
+
+def transcribe_audio_omnizart_advanced(audio_file, mode, progress=gr.Progress()):
+    """
+    Transcribes audio using Omnizart with a selected mode.
+    Modes: music, chord, drum, vocal, vocal-contour, beat
+    """
+    output_dir = None
+    output_files_list = []
+    synthesized_audio_path = None
+    mixed_audio_path = None
+    original_audio_segment_path = None
+
+    if not audio_file:
+         return None, None, None, None, None, None, "Please upload an audio file."
+    
+    if not mode:
+         mode = "music" # logical default
+
+    logging.info(f"Starting Omnizart Advanced Transcription (Mode: {mode})")
+    print(f"--- Starting Omnizart Advanced Transcription (Mode: {mode}) ---")
+    progress(0, desc="Initializing...")
+
+    try:
+        # Prepare output directory
+        base_output_dir = pathlib.Path(current_config.get("output_dir", os.path.join(os.getcwd(), "output")))
+        base_temp_dir = base_output_dir / "omnizart_advanced"
+        base_temp_dir.mkdir(parents=True, exist_ok=True)
+        
+        import datetime
+        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M")
+        clean_name = pathlib.Path(audio_file).stem.replace(" ", "_").replace("(", "").replace(")", "")[:20]
+        folder_name = f"{timestamp}_{clean_name}_{mode}_{uuid.uuid4().hex[:6]}"
+        
+        output_dir = base_temp_dir / folder_name
+        output_dir.mkdir(parents=True, exist_ok=True)
+        print(f"Output directory: {output_dir}")
+
+        # Run transcription
+        progress(0.2, desc=f"Running Omnizart ({mode})...")
+        
+        def omni_callback(msg):
+             progress(None, desc=f"Omnizart ({mode}): {msg[:50]}")
+             
+        output_path = run_omnizart(audio_file, str(output_dir), mode=mode, callback=omni_callback)
+        
+        if not output_path:
+             raise Exception("Omnizart failed to generate output. Check console/logs.")
+
+        output_files_list.append(str(output_path))
+        print(f"Omnizart output: {output_path}")
+
+        # Synthesize Audio (if MIDI)
+        # 'vocal-contour' might produce MIDI or CSV? Default omnizart usually produces midi for notes.
+        # 'beat' produces txt.
+        
+        is_midi = output_path.lower().endswith(('.mid', '.midi'))
+        
+        if is_midi:
+            progress(0.8, desc="Synthesizing Audio...")
+            soundfont_path = current_config.get("soundfont_path", "")
+            if not soundfont_path or not os.path.exists(soundfont_path):
+                 soundfont_path = os.path.join(os.getcwd(), "soundfont", "MS Basic.sf3")
+    
+            # Special handling for drums soundfont or channel?
+            # Existing synth function uses default fluid settings
+            synthesized_audio_path = synthesize_midi(str(output_path), soundfont_path, output_dir, filename=f"{mode}_synth.wav")
+            
+            if synthesized_audio_path:
+                 output_files_list.append(synthesized_audio_path)
+                 
+                 mixed_audio_path, original_audio_segment_path = create_mix(
+                      audio_file,
+                      synthesized_audio_path,
+                      output_dir
+                 )
+                 if mixed_audio_path:
+                      output_files_list.append(mixed_audio_path)
+        else:
+             # Non-MIDI output (beat txt, etc) - No synthesis
+             # Still cache original for playback
+             original_audio_segment_path = audio_file
+
+        # Prepare Tracks
+        tracks_dict = {}
+        if original_audio_segment_path:
+             tracks_dict["Original"] = cache_file_for_playback(original_audio_segment_path)
+        if mixed_audio_path:
+             tracks_dict["Mixed"] = cache_file_for_playback(mixed_audio_path)
+        if synthesized_audio_path:
+             tracks_dict["Synthesized"] = cache_file_for_playback(synthesized_audio_path)
+             
+        return format_player_output(output_files_list, None, tracks_dict, f"Omnizart ({mode}) Transcription successful!")
+
+    except Exception as e:
+        logging.exception(f"Error during omnizart {mode} transcription")
+        return format_player_output(None, None, {}, f"Error: {e}")
+
+def transcribe_audio_lunaverus(audio_file, progress=gr.Progress()):
+    """
+    Transcribes audio using the SheetSage V3 (Lunaverus-style) CNN.
+    """
+    output_dir = None
+    output_files_list = []
+    synthesized_audio_path = None
+    mixed_audio_path = None
+    original_audio_segment_path = None
+
+    if not audio_file:
+         return None, None, None, None, None, None, "Please upload an audio file."
+    
+    logging.info("Starting SheetSage V3 (Lunaverus) Transcription")
+    print(f"--- Starting SheetSage V3 (Lunaverus) Transcription ---")
+    progress(0, desc="Initializing...")
+
+    try:
+        # Prepare output directory
+        base_output_dir = pathlib.Path(current_config.get("output_dir", os.path.join(os.getcwd(), "output")))
+        base_temp_dir = base_output_dir / "sheetsage_v3"
+        base_temp_dir.mkdir(parents=True, exist_ok=True)
+        
+        import datetime
+        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M")
+        clean_name = pathlib.Path(audio_file).stem.replace(" ", "_").replace("(", "").replace(")", "")[:20]
+        folder_name = f"{timestamp}_{clean_name}_v3_{uuid.uuid4().hex[:6]}"
+        
+        output_dir = base_temp_dir / folder_name
+        output_dir.mkdir(parents=True, exist_ok=True)
+        print(f"Output directory: {output_dir}")
+
+        # Run transcription
+        progress(0.2, desc="Running CNN Inference (This might take a while)...")
+        
+        # Look for weights
+        weights_path = os.path.join(os.path.dirname(__file__), "modules", "lunaverus_weights.pth")
+        
+        import timeit
+        import threading
+        
+        # Timer logic
+        t_start_time = time.time()
+        stop_event = threading.Event()
+        def timer_loop():
+             while not stop_event.is_set():
+                elapsed = int(time.time() - t_start_time)
+                if elapsed > 0 and elapsed % 2 == 0:
+                     print(f"[V3 Timer] Elapsed: {elapsed}s...", end='\r', flush=True)
+                time.sleep(1)
+        
+        t_thread = threading.Thread(target=timer_loop, daemon=True)
+        t_thread.start()
+
+        # Determine device
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+        print(f"V3 Running on: {device}")
+        
+        output_midi_path = run_lunaverus(audio_file, model_weights_path=weights_path, device=device)
+        
+        stop_event.set()
+        t_thread.join(timeout=1.0)
+        
+        if not output_midi_path:
+             raise Exception("Inference failed to generate MIDI.")
+
+        # Move correct output to our folder if needed, or just use it
+        # The module writes to same directory as input usually, let's move it to output_dir
+        final_midi_path = output_dir / "transcription.midi"
+        shutil.move(output_midi_path, final_midi_path)
+        
+        output_files_list.append(str(final_midi_path))
+        print(f"Output: {final_midi_path}")
+
+        # Synthesize Audio 
+        progress(0.8, desc="Synthesizing Audio...")
+        soundfont_path = current_config.get("soundfont_path", "")
+        if not soundfont_path or not os.path.exists(soundfont_path):
+             soundfont_path = os.path.join(os.getcwd(), "soundfont", "MS Basic.sf3")
+
+        synthesized_audio_path = synthesize_midi(str(final_midi_path), soundfont_path, output_dir, filename="v3_synth.wav")
+        if synthesized_audio_path:
+             output_files_list.append(synthesized_audio_path)
+             
+             mixed_audio_path, original_audio_segment_path = create_mix(
+                  audio_file,
+                  synthesized_audio_path,
+                  output_dir
+             )
+             if mixed_audio_path:
+                  output_files_list.append(mixed_audio_path)
+
+        # Prepare Tracks
+        tracks_dict = {}
+        if original_audio_segment_path or audio_file:
+             tracks_dict["Original"] = cache_file_for_playback(original_audio_segment_path if original_audio_segment_path else audio_file)
+        if mixed_audio_path:
+             tracks_dict["Mixed"] = cache_file_for_playback(mixed_audio_path)
+        if synthesized_audio_path:
+             tracks_dict["Synthesized"] = cache_file_for_playback(synthesized_audio_path)
+             
+        return format_player_output(output_files_list, None, tracks_dict, "SheetSage V3 Transcription successful!")
+
+    except Exception as e:
+        logging.exception("Error during V3 transcription")
         return format_player_output(None, None, {}, f"Error: {e}")
 
 from sheetsage.config_manager import load_config, save_config
@@ -350,15 +665,32 @@ def synthesize_midi(midi_path, soundfont_path_config, output_dir, filename="outp
              logging.warning(f"Soundfont not found at {soundfont_path_config}")
              return None
              
+        # Check if MIDI file exists and has size
+        if not os.path.exists(midi_path) or os.path.getsize(midi_path) == 0:
+             logging.warning(f"MIDI file is missing or empty: {midi_path}")
+             return None
+
         pm = pretty_midi.PrettyMIDI(midi_path)
+        
+        # Debug MIDI content
+        total_notes = sum(len(i.notes) for i in pm.instruments)
+        duration = pm.get_end_time()
+        # logging.info(f"Synthesizing MIDI: {total_notes} notes, {duration:.2f}s duration.")
+        
+        if total_notes == 0 or duration <= 0:
+             logging.warning("MIDI file has no notes or zero duration. Skipping synthesis.")
+             return None
+
         audio_data = pm.fluidsynth(fs=44100, sf2_path=soundfont_path_config)
         
-        # Normalize
-        max_val = np.abs(audio_data).max()
-        if max_val > 0:
-            audio_data = audio_data / max_val
-        else:
-            logging.warning("Synthesized audio is silent.")
+        if audio_data is None or len(audio_data) == 0:
+             logging.warning("Synthesized audio is empty.")
+             return None
+
+        # Normalize safely
+        chk_max = np.abs(audio_data).max() if audio_data.size > 0 else 0
+        if chk_max > 0:
+            audio_data = audio_data / chk_max
         
         # Convert to 16-bit PCM for broader compatibility
         audio_data_int16 = (audio_data * 32767).astype(np.int16)
@@ -566,6 +898,28 @@ def transcribe_audio_lead_sheet(
             logging.warning(f"Ignoring invalid segment_end_hint ({segment_end_hint}) <= start ({start_val})")
             segment_end_hint = None
 
+        # Helper for status
+        def status_cb(s):
+             msg = f"SheetSage: {s.name.replace('_', ' ').title()}"
+             print(f"[LeadSheet] {msg}")
+             progress(None, desc=msg)
+
+        import time
+        import threading
+        
+        # Timer logic
+        start_time = time.time()
+        stop_event = threading.Event()
+        def timer_loop():
+            while not stop_event.is_set():
+                elapsed = int(time.time() - start_time)
+                if elapsed > 0 and elapsed % 2 == 0:
+                     print(f"[SheetSage Timer] Elapsed: {elapsed}s...", end='\r', flush=True)
+                time.sleep(1)
+        
+        t_thread = threading.Thread(target=timer_loop, daemon=True)
+        t_thread.start()
+
         # Run transcription
         result_tuple = sheetsage(
             audio_path_bytes_or_url=audio_path_or_url,
@@ -582,10 +936,13 @@ def transcribe_audio_lead_sheet(
             melody_threshold=float(melody_threshold) if melody_threshold is not None else None,
             harmony_threshold=float(harmony_threshold) if harmony_threshold is not None else None,
             legacy_behavior=legacy_behavior,
-            status_change_callback=lambda s: print(f"Progress Update: {s.name}"),
+            status_change_callback=status_cb,
             tqdm=progress.tqdm,
             return_intermediaries=False
         )
+        
+        stop_event.set()
+        t_thread.join(timeout=1.0)
         progress(0.7, desc="Generating Output Files...")
         
         # Unpack results
@@ -1102,14 +1459,31 @@ def transcribe_audio_basic_pitch(
         logging.info(f"Running subprocess: {' '.join(cmd)}")
         print(f"Running Basic Pitch in subprocess...")
         
+        import time
+        import threading
+
+        # Timer logic
+        start_time = time.time()
+        stop_event = threading.Event()
+
+        def timer_loop():
+            while not stop_event.is_set():
+                elapsed = int(time.time() - start_time)
+                if elapsed > 0 and elapsed % 2 == 0:
+                     print(f"[BP Timer] Elapsed: {elapsed}s...", end='\r', flush=True)
+                time.sleep(1)
+        
+        t_thread = threading.Thread(target=timer_loop, daemon=True)
+        t_thread.start()
+
         # Run and capture output
         process = subprocess.Popen(
             cmd,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             text=True,
-            encoding='utf-8', # Force UTF-8 reading
-            errors='replace', # Prevent crashing on bad chars
+            encoding='utf-8', 
+            errors='replace', 
             bufsize=1,
             cwd=os.getcwd()
         )
@@ -1117,6 +1491,7 @@ def transcribe_audio_basic_pitch(
         generated_files = []
         
         # Read output line by line
+        last_update = 0
         while True:
             line = process.stdout.readline()
             if not line and process.poll() is not None:
@@ -1134,8 +1509,15 @@ def transcribe_audio_basic_pitch(
                      logging.error(line)
                      print(line)
                 else:
-                     # Normal log
+                     # Normal log -> Update Progress too
                      print(f"[BP]: {line}")
+                     now = time.time()
+                     if now - last_update > 0.5: # throttle
+                         progress(None, desc=f"BP: {line[:50]}")
+                         last_update = now
+
+        stop_event.set()
+        t_thread.join(timeout=1.0)
 
         if process.returncode != 0:
              raise Exception("Basic Pitch subprocess failed. Check console logs.")
@@ -1229,7 +1611,7 @@ def unified_transcriber(
     progress=gr.Progress()
 ):
     # Validation: Check if audio input is provided
-    if mode in ["Piano (Polyphonic)", "Basic Pitch (Polyphonic)"]:
+    if mode in ["Piano (Polyphonic)", "Basic Pitch (Polyphonic)", "Drums (Omnizart)"]:
         if audio_file is None:
             msg = f"Please upload an audio file for {mode}."
             gr.Warning(msg)
@@ -1242,6 +1624,8 @@ def unified_transcriber(
 
     if mode == "Piano (Polyphonic)":
         return transcribe_audio_piano(audio_file, progress=progress)
+    elif mode == "Drums (Omnizart)":
+        return transcribe_audio_drums(audio_file, progress=progress)
     elif mode == "Basic Pitch (Polyphonic)":
         return transcribe_audio_basic_pitch(
             audio_file,
@@ -1254,6 +1638,8 @@ def unified_transcriber(
             separate_vocals=separate_vocals, 
             progress=progress
         )
+    elif mode == "SheetSage V3 (Lunaverus)":
+        return transcribe_audio_lunaverus(audio_file, progress=progress)
     else: # Lead Sheet (Standard)
         return transcribe_audio_lead_sheet(
             audio_file, audio_url, segment_start_hint, segment_end_hint,
@@ -1289,7 +1675,7 @@ with gr.Blocks(title="Sheet Sage") as demo:
 
                     gr.Markdown("### 2. Mode")
                     mode = gr.Radio(
-                        ["Lead Sheet (Standard)", "Piano (Polyphonic)", "Basic Pitch (Polyphonic)"],
+                        ["Lead Sheet (Standard)", "Piano (Polyphonic)", "Basic Pitch (Polyphonic)", "Drums (Omnizart)", "SheetSage V3 (Lunaverus)"],
                         label="Transcription Mode",
                         value="Lead Sheet (Standard)",
                         info="Select the transcription model suitable for your audio."
@@ -1392,8 +1778,8 @@ with gr.Blocks(title="Sheet Sage") as demo:
                     
                     # Visibility Logic
                     def update_visibility(selected_mode):
-                        # Shared: Visible for Lead Sheet OR Basic Pitch
-                        show_shared = (selected_mode in ["Lead Sheet (Standard)", "Basic Pitch (Polyphonic)"])
+                        # Shared: Visible for Lead Sheet OR Basic Pitch OR Drums
+                        show_shared = (selected_mode in ["Lead Sheet (Standard)", "Basic Pitch (Polyphonic)", "Drums (Omnizart)"])
                         # Advanced: Visible ONLY for Lead Sheet
                         show_advanced = (selected_mode == "Lead Sheet (Standard)")
                         
@@ -1543,6 +1929,64 @@ with gr.Blocks(title="Sheet Sage") as demo:
 
             restart_btn.click(restart_app, inputs=None, outputs=None, js=restart_js)
             stop_app_btn.click(stop_app, inputs=None, outputs=None, js=stop_js)
+
+
+        # Omnizart Advanced Tab
+        with gr.TabItem("Omnizart (Advanced)"):
+            gr.Markdown("### Advanced Omnizart Transcription")
+            gr.Markdown("Use the full capabilities of Omnizart for various transcription tasks.")
+            
+            with gr.Row(elem_classes=["container"]):
+                with gr.Column(scale=1):
+                    gr.Markdown("### 1. Input & Settings")
+                    input_omni_adv = gr.Audio(type="filepath", label="Audio File")
+                    
+                    mode_omni_adv = gr.Dropdown(
+                        choices=["music", "chord", "drum", "vocal", "vocal-contour", "beat"],
+                        value="music",
+                        label="Transcription Mode",
+                        info="Select the specific Omnizart model."
+                    )
+                    
+                    omni_desc = gr.Markdown(value="**Music**: General polyphonic transcription (e.g., Piano).")
+                    
+                    def update_desc_fn(m):
+                         descs = {
+                             "music": "**Music**: General polyphonic transcription (e.g., Piano).",
+                             "chord": "**Chord**: Identifies chord progressions.",
+                             "drum": "**Drum**: Transcribes percussive elements.",
+                             "vocal": "**Vocal**: Extracts the main vocal melody as MIDI notes.",
+                             "vocal-contour": "**Vocal-contour**: Extracts detailed pitch curves.",
+                             "beat": "**Beat**: Tracks beats and tempo."
+                         }
+                         return descs.get(m, "")
+                    
+                    mode_omni_adv.change(update_desc_fn, mode_omni_adv, omni_desc)
+                    
+                    btn_omni_adv = gr.Button("Transcribe", variant="primary", size="lg")
+                
+                with gr.Column(scale=1):
+                     gr.Markdown("### 2. Output")
+                     status_omni_adv = gr.Textbox(label="Status", interactive=False)
+                     files_omni_adv = gr.Files(label="Download Results")
+                     
+                     with gr.Group():
+                          plot_omni_adv = gr.Plot(label="Piano Roll", visible=False) # Helper for structure
+                          player_omni_adv = gr.Audio(label="Audio Player", interactive=False)
+                          track_sel_omni_adv = gr.Dropdown(label="Select Track", choices=[], interactive=True)
+                          tracks_state_omni_adv = gr.State({})
+
+                     track_sel_omni_adv.change(
+                          fn=update_audio_player,
+                          inputs=[track_sel_omni_adv, tracks_state_omni_adv],
+                          outputs=player_omni_adv
+                     )
+
+            btn_omni_adv.click(
+                transcribe_audio_omnizart_advanced,
+                inputs=[input_omni_adv, mode_omni_adv],
+                outputs=[files_omni_adv, plot_omni_adv, tracks_state_omni_adv, status_omni_adv, track_sel_omni_adv, player_omni_adv]
+            )
 
         # History Tab
         with gr.TabItem("History"):

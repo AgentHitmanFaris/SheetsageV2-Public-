@@ -13,7 +13,7 @@ from scipy.special import softmax
 
 from .align import create_beat_to_time_fn
 from .assets import retrieve_asset
-from .beat_track import librosa_beat_track
+from .beat_track import beatnet_beat_track
 from .modules import EncOnlyTransducer, IdentityEncoder, TransformerEncoder
 from .representations import Handcrafted
 from .theory import (
@@ -227,7 +227,7 @@ def _beat_tracking_with_hints(
         )
 
     # Run beat detection on segment
-    first_downbeat_idx, beats_per_measure, beats = librosa_beat_track(
+    first_downbeat_idx, beats_per_measure, beats = beatnet_beat_track(
         sr,
         audio,
         beats_per_bar=beats_per_measure_hint

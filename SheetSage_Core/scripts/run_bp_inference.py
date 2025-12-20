@@ -21,9 +21,9 @@ os.environ["SHEETSAGE_CACHE_DIR"] = local_cache
 os.environ["BASIC_PITCH_USE_ONNX"] = "1" 
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
-# Force TensorFlow to NOT see the GPU so it doesn't waste time initializing CUDA
-# (Since we are using ONNX Runtime for the actual inference anyway)
-os.environ["CUDA_VISIBLE_DEVICES"] = "-1" 
+# Allow TensorFlow/ONNX to see the GPU
+# os.environ["CUDA_VISIBLE_DEVICES"] = "-1"  <-- REMOVED to enable GPU
+
 
 # Patch os.add_dll_directory to prevent fluidsynth error on Windows
 # Some library versions try to add C:\tools\fluidsynth\bin which might not exist

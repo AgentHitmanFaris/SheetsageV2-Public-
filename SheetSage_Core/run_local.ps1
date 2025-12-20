@@ -59,6 +59,16 @@ if (Test-Path $LocalModels) {
     $Env:SHEETSAGE_CACHE_DIR = $CacheDir
 }
 
+# Add local CUDA libs (Portable Setup)
+$CudaLibs = Join-Path $PSScriptRoot "cuda_libs"
+if (Test-Path $CudaLibs) {
+    $Env:Path = "$CudaLibs;$Env:Path"
+    # Also set CUDA_PATH and related vars to help TF find it if needed
+    $Env:CUDA_PATH = $CudaLibs
+    $Env:CUDA_PATH_V11_2 = $CudaLibs
+    Write-Host "Added local CUDA libraries to PATH: $CudaLibs"
+}
+
 # Run the Gradio interface
 Write-Host "Starting Gradio Interface..."
 # Determine Python Executable

@@ -3,6 +3,14 @@ import sys
 import shutil
 import tempfile
 import logging
+import asyncio
+import platform
+
+# Fix for "ConnectionResetError: [WinError 10054]" on Windows
+# This is a benign error caused by the ProactorEventLoop when clients disconnect abruptly.
+# Switching to SelectorEventLoopPolicy avoids this specific noise.
+if platform.system() == 'Windows':
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
 # Configure logging to stdout
 logging.basicConfig(
