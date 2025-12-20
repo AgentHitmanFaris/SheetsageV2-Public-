@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v3.0.1] - 2025-12-21
+
+### Fixed
+- **Omnizart f-string syntax error**: Fixed `SyntaxError` in `omnizart_transcription.py` caused by backslashes in f-strings.
+- **Omnizart GPU crash**: Fixed exit code 3221226505 (memory access violation) by adding CUDA 11.0 DLL path support for Omnizart's TensorFlow.
+- **V3 `time` module**: Fixed `NameError` in `transcribe_audio_lunaverus` by ensuring `time` is imported at module level.
+
+### Improved
+- **UI/UX Enhancements**:
+    - Added **global Restart/Stop buttons** at the top of the interface for easy access from any tab.
+    - Explicitly added `temp_playback/` to Gradio's `allowed_paths` to improve audio player reliability.
+- **Documentation**:
+    - Added comprehensive **FAQ section** to `README.md` explaining common errors like `ConnectionResetError [WinError 10054]`.
+    - Clarified that this error is harmless and occurs during normal browser/network interactions.
+
 ## [v3.0.0] - 2025-12-20
 
 ### Major Release: SheetSage V3 "Lunaverus" & Unified Architecture

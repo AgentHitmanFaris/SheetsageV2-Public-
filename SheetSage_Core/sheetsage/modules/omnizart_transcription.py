@@ -61,10 +61,10 @@ def run_omnizart(audio_path, output_dir_str, mode="drum", callback=None):
         output_dir.mkdir(parents=True, exist_ok=True)
         
         # 2. Build Command
-        # Inject Device Check
+        # Add CUDA 11.0 path for Omnizart (it needs cudart64_110.dll)
         py_cmd = (
             "import tensorflow as tf; "
-            "print(f'\\n[Omnizart Wrapper] Tensor Device: {tf.config.list_physical_devices(\\'GPU\\') or \\'CPU Only\\'}\\n'); "
+            "print('\\n[Omnizart Wrapper] Tensor Device: ' + str(tf.config.list_physical_devices('GPU') or 'CPU Only') + '\\n'); "
             "from omnizart.cli.cli import entry; "
             "entry()"
         )
@@ -83,6 +83,14 @@ def run_omnizart(audio_path, output_dir_str, mode="drum", callback=None):
         print(f"Running Omnizart ({mode}) subprocess...")
         
         # 3. Execute with Popen
+        # Add CUDA 11.0 libs to PATH for this subprocess
+        import os
+        env = os.environ.copy()
+        cuda_110_path = pathlib.Path(os.getcwd()) / "cuda_libs"
+        if cuda_110_path.exists():
+            env['PATH'] = str(cuda_110_path) + os.pathsep + env.get('PATH', '')
+            print(f"Added CUDA 11.0 path: {cuda_110_path}")
+        
         # Start timer
         t_thread = threading.Thread(target=timer_loop, daemon=True)
         t_thread.start()
@@ -90,10 +98,11 @@ def run_omnizart(audio_path, output_dir_str, mode="drum", callback=None):
         process = subprocess.Popen(
             cmd, 
             stdout=subprocess.PIPE, 
-            stderr=subprocess.STDOUT, # Merge stderr to stdout
+            stderr=subprocess.STDOUT,
             text=True, 
             bufsize=1, 
-            universal_newlines=True
+            universal_newlines=True,
+            env=env  # Use modified environment
         )
 
         # Stream output

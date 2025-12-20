@@ -88,6 +88,41 @@ Sheet Sage V3 operates on a **Staged Inference Pipeline**:
 
 ---
 
+## ❓ FAQ / Troubleshooting
+
+### **Q: I see `ConnectionResetError: [WinError 10054]` in the console. Is something broken?**
+**A:** No! This is a **harmless network error** that occurs when:
+- You close or refresh the browser tab while audio is playing
+- The browser cancels a request (e.g., clicking "Stop" during playback)
+- Network interruption during file transfer
+
+**What it does NOT mean:**
+- ❌ Your transcription failed
+- ❌ Files are corrupted  
+- ❌ The app crashed
+
+This is normal behavior for web applications streaming large audio files. You can safely ignore these messages.
+
+### **Q: Audio player shows 0:00 and won't play**
+**A:** Try these steps:
+1. **Restart the app** using the "🔄 Restart App" button at the top
+2. Check that files were generated in the `output/` folder
+3. Download the files directly and play them locally
+
+### **Q: Omnizart is slow / crashes**
+**A:** Omnizart runs on **CPU only** due to CUDA version compatibility (it needs CUDA 11.0, we use 11.2 for other models). This means:
+- ✅ **Stable** but slower (~3-5 minutes per song)
+- Works best on songs with **loud, prominent drums** (rock, metal, electronic)
+- May not detect subtle percussion in ballads
+
+### **Q: GPU not detected**
+**A:** Check:
+1. Run `check_gpu_robust.py` to verify CUDA setup
+2. Ensure `cuda_libs/` folder exists with DLLs
+3. Restart the app after adding CUDA files
+
+---
+
 ## 📜 Credits
 
 Developed by **Muhammad Faris Hakim**.

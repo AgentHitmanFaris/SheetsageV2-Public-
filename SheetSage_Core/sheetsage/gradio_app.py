@@ -6,6 +6,7 @@ import uuid
 import tempfile
 import urllib.parse
 import shutil
+import time
 import gradio as gr
 import matplotlib
 matplotlib.use('Agg') # Use Agg backend for non-GUI environments
@@ -1660,6 +1661,11 @@ h1 { text-align: center; color: #2d3748; }
 with gr.Blocks(title="Sheet Sage") as demo:
     gr.Markdown("# 🎼 Sheet Sage")
     gr.Markdown("### Audio to Lead Sheet Transcription", elem_classes=["description"])
+    
+    # Global Control Buttons (Always Accessible)
+    with gr.Row():
+        restart_btn_global = gr.Button("🔄 Restart App", variant="secondary", scale=1)
+        stop_app_btn_global = gr.Button("⛔ Stop App", variant="stop", scale=1)
 
     with gr.Tabs():
         with gr.TabItem("Transcribe"):
@@ -2068,12 +2074,22 @@ with gr.Blocks(title="Sheet Sage") as demo:
                 outputs=[settings_status]
             )
 
+    # Wire up global control buttons (reuse functions from Transcribe tab)
+    restart_btn_global.click(restart_app, inputs=None, outputs=None, js=restart_js)
+    stop_app_btn_global.click(stop_app, inputs=None, outputs=None, js=stop_js)
+
     gr.Markdown("Built with Sheetsage", elem_classes=["footer"])
 
 if __name__ == "__main__":
     # Ensure allowed_paths captures D:\Document\sheetsage\output correctly
     # We add current working directory and the specific output folder to allow lists
-    allowed = [os.getcwd(), os.path.join(os.getcwd(), "output"), "D:\\", "C:\\"] # Broad access for local tool
+    allowed = [
+        os.getcwd(), 
+        os.path.join(os.getcwd(), "output"),
+        os.path.join(os.getcwd(), "temp_playback"),  # Explicitly allow cached audio
+        "D:\\", 
+        "C:\\"
+    ]
     if current_config.get("output_dir"):
          allowed.append(current_config.get("output_dir"))
          
