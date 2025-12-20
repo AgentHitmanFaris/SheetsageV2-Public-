@@ -434,33 +434,15 @@ current_config = load_config()
 
 def cache_file_for_playback(original_path):
     """
-    Copies the file to a temporary 'playback' directory with a safe filename.
-    Returns the absolute path to the cached file.
+    Returns the original file path for Gradio to serve.
+    (Caching disabled - Gradio has issues serving copied files)
     """
     if not original_path or not os.path.exists(original_path):
         return None
-        
-    try:
-        # Debug Log
-        print(f"Caching file: {original_path}")
-        
-        # Use a temp directory inside the project to ensure access
-        playback_dir = os.path.join(os.getcwd(), "temp_playback")
-        os.makedirs(playback_dir, exist_ok=True)
-        
-        # Create a safe filename hash
-        ext = os.path.splitext(original_path)[1]
-        safe_name = f"audio_{uuid.uuid4().hex}{ext}"
-        target_path = os.path.join(playback_dir, safe_name)
-        
-        # Try copy
-        shutil.copy(original_path, target_path)
-        print(f"Cached to: {target_path}")
-        return target_path
-    except Exception as e:
-        print(f"CACHE FAILURE: {e}")
-        logging.error(f"Failed to cache file for playback: {e}")
-        return original_path # Fallback
+    
+    # Return original path directly - Gradio will serve it
+    print(f"Audio file ready: {original_path}")
+    return original_path
 
 def get_history_items():
     """

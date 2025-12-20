@@ -8,6 +8,7 @@ All notable changes to this project will be documented in this file.
 - **Omnizart f-string syntax error**: Fixed `SyntaxError` in `omnizart_transcription.py` caused by backslashes in f-strings.
 - **Omnizart GPU crash**: Fixed exit code 3221226505 (memory access violation) by adding CUDA 11.0 DLL path support for Omnizart's TensorFlow.
 - **V3 `time` module**: Fixed `NameError` in `transcribe_audio_lunaverus` by ensuring `time` is imported at module level.
+- **Audio player not loading**: Fixed Gradio audio player showing 0:00 by serving original files directly instead of cached copies.
 
 ### Improved
 - **UI/UX Enhancements**:
