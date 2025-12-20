@@ -434,15 +434,16 @@ current_config = load_config()
 
 def cache_file_for_playback(original_path):
     """
-    Returns the original file path for Gradio to serve.
-    (Caching disabled - Gradio has issues serving copied files)
+    Returns an absolute path (forward‑slash) that Gradio can serve.
     """
     if not original_path or not os.path.exists(original_path):
         return None
     
-    # Return original path directly - Gradio will serve it
-    print(f"Audio file ready: {original_path}")
-    return original_path
+    # Use absolute path normalized with forward slashes
+    import pathlib
+    abs_path = str(pathlib.Path(original_path).resolve().as_posix())
+    print(f"Audio file ready (absolute): {abs_path}")
+    return abs_path
 
 def get_history_items():
     """
@@ -1559,19 +1560,25 @@ def update_audio_player(selected_track, tracks_dict):
     return tracks_dict.get(selected_track)
 
 def format_player_output(files, fig, tracks_dict, status):
-    if not tracks_dict: tracks_dict = {}
+    if not tracks_dict:
+        tracks_dict = {}
     choices = list(tracks_dict.keys())
     # Sort choices to have Original first, then Synth, then Vocals
     def sort_key(k):
-        if "Original" in k: return 0
-        if "Synthesized" in k: return 1
+        if "Original" in k:
+            return 0
+        if "Synthesized" in k:
+            return 1
         return 2
     choices.sort(key=sort_key)
-    
+
     val = choices[0] if choices else None
-    path = tracks_dict.get(val) if val else None
     
-    return files, fig, tracks_dict, status, gr.update(choices=choices, value=val), path
+    # We return None for the final 'path' element to avoid double-triggering the player.
+    # The 'transcribe_track_selector' receiving 'value=val' will trigger 'update_audio_player'
+    # which will then set the correct 'transcribe_main_player' path.
+    # This prevents the "AbortError" (double concurrency) in browsers.
+    return files, fig, tracks_dict, status, gr.update(choices=choices, value=val), None
 
 # Unified Transcriber Handler
 def unified_transcriber(
@@ -2063,17 +2070,16 @@ with gr.Blocks(title="Sheet Sage") as demo:
     gr.Markdown("Built with Sheetsage", elem_classes=["footer"])
 
 if __name__ == "__main__":
-    # Ensure allowed_paths captures D:\Document\sheetsage\output correctly
-    # We add current working directory and the specific output folder to allow lists
-    allowed = [
-        os.getcwd(), 
-        os.path.join(os.getcwd(), "output"),
-        os.path.join(os.getcwd(), "temp_playback"),  # Explicitly allow cached audio
-        "D:\\", 
-        "C:\\"
-    ]
+    import pathlib
+    # Sanitize allowed paths for Windows
+    current_dir = str(pathlib.Path(os.getcwd()).resolve())
+    output_dir = str(pathlib.Path(os.getcwd(), "output").resolve())
+    temp_dir = str(pathlib.Path(os.getcwd(), "temp_playback").resolve())
+    
+    allowed = [current_dir, output_dir, temp_dir, "C:/", "D:/"]
+    
     if current_config.get("output_dir"):
-         allowed.append(current_config.get("output_dir"))
+         allowed.append(str(pathlib.Path(current_config.get("output_dir")).resolve()))
          
     demo.queue(max_size=5)
     demo.launch(
