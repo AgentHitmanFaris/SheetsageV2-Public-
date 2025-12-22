@@ -385,7 +385,13 @@ def _extract_features(
         raise ValueError("Tempo too fast for beat-informed feature resampling")
 
     extractor = _init_extractor(input_feats)
-    chunks_features = []
+
+    moments = None
+    if input_feats == InputFeats.HANDCRAFTED:
+        moments = np.load(
+            retrieve_asset(f"SHEETSAGE_V02_{input_feats.name}_MOMENTS", log=False)
+        )
+
     audio_path = None
     temp_path = None
     try:
@@ -422,26 +428,19 @@ def _extract_features(
 
             # Compute means
             beat_resampled = beat_sums / lengths[:, np.newaxis]
-            chunks_features.append(beat_resampled)
+
+            # Normalize handcrafted features (after beat resampling)
+            if moments is not None:
+                beat_resampled -= moments[0]
+                beat_resampled /= moments[1]
+
+            yield beat_resampled
     finally:
         if temp_path is not None and os.path.exists(temp_path):
             try:
                 os.remove(temp_path)
             except Exception as e:
                 logging.warning(f"Failed to remove temporary file {temp_path}: {e}")
-
-    # Normalize handcrafted features (after beat resampling)
-    # NOTE: Normalizing after beat resampling is probably a bug in retrospect, but it's
-    # what the model expects.
-    if input_feats == InputFeats.HANDCRAFTED:
-        moments = np.load(
-            retrieve_asset(f"SHEETSAGE_V02_{input_feats.name}_MOMENTS", log=False)
-        )
-        for chunk in chunks_features:
-            chunk -= moments[0]
-            chunk /= moments[1]
-
-    return chunks_features
 
 
 def _transcribe_chunks(
@@ -452,100 +451,88 @@ def _transcribe_chunks(
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     BATCH_SIZE = 32
 
+    melody_model = None
     if detect_melody:
         if melody_features is None:
             raise ValueError("Melody features required for detection")
         melody_model = _init_model(Task.MELODY, input_feats, Model.TRANSFORMER)
         melody_logits = []
 
-        with torch.no_grad():
-            for i in range(0, len(melody_features), BATCH_SIZE):
-                batch_chunks = melody_features[i : i + BATCH_SIZE]
-                curr_batch_size = len(batch_chunks)
-
-                # Optimize: Pad only to the max length in the current batch, not the global max
-                max_len = max([c.shape[0] for c in batch_chunks])
-                batch_src = np.zeros(
-                    (
-                        max_len,
-                        curr_batch_size,
-                        batch_chunks[0].shape[1],
-                    ),
-                    dtype=np.float32,
-                )
-                batch_src_len = np.zeros(curr_batch_size, dtype=np.int64)
-
-                for j, src in enumerate(batch_chunks):
-                    l = src.shape[0]
-                    batch_src[:l, j, :] = src
-                    batch_src_len[j] = l
-
-                batch_src = torch.from_numpy(batch_src).to(device)
-                batch_src_len = torch.from_numpy(batch_src_len).to(device)
-
-                if device.type == "cuda":
-                    with torch.amp.autocast("cuda"):
-                        batch_melody_logits = melody_model(
-                            batch_src, batch_src_len, None, None
-                        )
-                else:
-                    batch_melody_logits = melody_model(
-                        batch_src, batch_src_len, None, None
-                    )
-                batch_melody_logits_np = batch_melody_logits.float().cpu().numpy()
-                for j in range(curr_batch_size):
-                    melody_logits.append(batch_melody_logits_np[: batch_src_len[j], j])
-
+    harmony_model = None
     if detect_harmony:
         if harmony_features is None:
             raise ValueError("Harmony features required for detection")
         harmony_model = _init_model(Task.HARMONY, input_feats, Model.TRANSFORMER)
         harmony_logits = []
 
-        with torch.no_grad():
-            for i in range(0, len(harmony_features), BATCH_SIZE):
-                batch_chunks = harmony_features[i : i + BATCH_SIZE]
-                curr_batch_size = len(batch_chunks)
+    def batch_generator(gen, batch_size):
+        batch = []
+        for item in gen:
+            batch.append(item)
+            if len(batch) == batch_size:
+                yield batch
+                batch = []
+        if batch:
+            yield batch
 
-                batch_src = np.zeros(
-                    (
-                        _MAX_TERTIARIES_PER_CHUNK,
-                        curr_batch_size,
-                        batch_chunks[0].shape[1],
-                    ),
-                    dtype=np.float32,
-                )
-                batch_src_len = np.zeros(curr_batch_size, dtype=np.int64)
+    # Helper to process a single batch
+    def process_batch(model, logits_list, batch_chunks, device):
+        curr_batch_size = len(batch_chunks)
+        # Optimize: Pad only to the max length in the current batch
+        max_len = max([c.shape[0] for c in batch_chunks])
+        batch_src = np.zeros(
+            (
+                max_len,
+                curr_batch_size,
+                batch_chunks[0].shape[1],
+            ),
+            dtype=np.float32,
+        )
+        batch_src_len = np.zeros(curr_batch_size, dtype=np.int64)
 
-                for j, src in enumerate(batch_chunks):
-                    l = src.shape[0]
-                    batch_src[:l, j, :] = src
-                    batch_src_len[j] = l
+        for j, src in enumerate(batch_chunks):
+            l = src.shape[0]
+            batch_src[:l, j, :] = src
+            batch_src_len[j] = l
 
-                batch_src = torch.from_numpy(batch_src).to(device)
-                batch_src_len = torch.from_numpy(batch_src_len).to(device)
+        batch_src = torch.from_numpy(batch_src).to(device)
+        batch_src_len = torch.from_numpy(batch_src_len).to(device)
 
-                if device.type == "cuda":
-                    with torch.amp.autocast("cuda"):
-                        batch_harmony_logits = harmony_model(
-                            batch_src, batch_src_len, None, None
-                        )
-                else:
-                    batch_harmony_logits = harmony_model(
-                        batch_src, batch_src_len, None, None
-                    )
-                batch_harmony_logits_np = batch_harmony_logits.float().cpu().numpy()
-                for j in range(curr_batch_size):
-                    harmony_logits.append(
-                        batch_harmony_logits_np[: batch_src_len[j], j]
-                    )
+        with torch.inference_mode():
+            if device.type == "cuda":
+                with torch.amp.autocast("cuda"):
+                    batch_logits = model(batch_src, batch_src_len, None, None)
+            else:
+                batch_logits = model(batch_src, batch_src_len, None, None)
 
-    if detect_melody:
-        total_num_tertiary = sum([c.shape[0] for c in melody_features])
-        assert sum([c.shape[0] for c in melody_logits]) == total_num_tertiary
-    if detect_harmony:
-        total_num_tertiary = sum([c.shape[0] for c in harmony_features])
-        assert sum([c.shape[0] for c in harmony_logits]) == total_num_tertiary
+        batch_logits_np = batch_logits.float().cpu().numpy()
+        for j in range(curr_batch_size):
+            logits_list.append(batch_logits_np[: batch_src_len[j], j])
+
+    # Case 1: Single source (or same generator)
+    single_source = (melody_features is harmony_features) and (melody_features is not None)
+
+    if single_source:
+        for batch_chunks in batch_generator(melody_features, BATCH_SIZE):
+            if detect_melody:
+                process_batch(melody_model, melody_logits, batch_chunks, device)
+            if detect_harmony:
+                process_batch(harmony_model, harmony_logits, batch_chunks, device)
+    else:
+        # Case 2: Separate sources
+        gen_m = batch_generator(melody_features, BATCH_SIZE) if detect_melody else None
+        gen_h = batch_generator(harmony_features, BATCH_SIZE) if detect_harmony else None
+
+        if detect_melody and detect_harmony:
+            for batch_m, batch_h in zip(gen_m, gen_h):
+                process_batch(melody_model, melody_logits, batch_m, device)
+                process_batch(harmony_model, harmony_logits, batch_h, device)
+        elif detect_melody:
+            for batch_m in gen_m:
+                process_batch(melody_model, melody_logits, batch_m, device)
+        elif detect_harmony:
+            for batch_h in gen_h:
+                process_batch(harmony_model, harmony_logits, batch_h, device)
 
     return melody_logits, harmony_logits
 
@@ -882,10 +869,10 @@ def sheetsage(
     # Create lead sheet
     status_change_callback(Status.FORMATTING)
     total_num_tertiary = 0
-    if melody_features is not None:
-        total_num_tertiary = sum([c.shape[0] for c in melody_features])
-    elif harmony_features is not None:
-        total_num_tertiary = sum([c.shape[0] for c in harmony_features])
+    if melody_logits is not None:
+        total_num_tertiary = sum([c.shape[0] for c in melody_logits])
+    elif harmony_logits is not None:
+        total_num_tertiary = sum([c.shape[0] for c in harmony_logits])
 
     lead_sheet, segment_beats, segment_beats_times = _format_lead_sheet(
         melody_logits,
