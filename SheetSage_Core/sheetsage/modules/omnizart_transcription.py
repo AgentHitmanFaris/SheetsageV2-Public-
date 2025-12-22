@@ -117,7 +117,7 @@ def run_omnizart(audio_path, output_dir_str, mode="drum", callback=None):
             # Print to console (preserving the timer effect? simple print is fine, it just pushes timer up)
             print(f"[{mode.upper()}] {line}")
             
-            # Update Gradio via callback
+            # Update UI via callback
             if callback:
                 # Basic heuristic to extract percentage if available
                 # Omnizart often uses tqdm style bars: "10%|#   | 100/1000"

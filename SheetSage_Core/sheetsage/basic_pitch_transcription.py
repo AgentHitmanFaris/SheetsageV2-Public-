@@ -42,7 +42,7 @@ def transcribe_basic_pitch(audio_path, output_midi_path,
         output_midi_path (str): Path to save final MIDI. (This function also generates PDF/Ly in the same dir)
         skip_pdf_generation (bool): If True, skips LilyPond/PDF generation.
         ... options ...
-        tqdm_func (callable): Function to wrap iterables for progress bars (e.g. tqdm or gradio.Progress.tqdm).
+        tqdm_func (callable): Function to wrap iterables for progress bars (e.g. tqdm).
     """
     logging.info(f"Starting Basic Pitch + Sheet Sage Lead Sheet generation for {audio_path}")
 

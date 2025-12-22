@@ -1,97 +1,182 @@
-# Sheet Sage - Audio to Lead Sheet Transcription V2
+# Sheet Sage V2 - Professional Audio Transcription
 
-Sheet Sage is an AI-powered tool that transcribes music audio into lead sheets (melody + chords) and MIDI files. It leverages multiple state-of-the-art models to provide high-quality transcriptions for various use cases.
+![Sheet Sage Logo](ic_logo.png)
 
-## Key Features
+**Sheet Sage** is a professional AI-powered audio transcription tool that converts music into lead sheets, MIDI files, and sheet music. Built with state-of-the-art machine learning models and featuring a sleek, native desktop interface.
 
-*   **Lead Sheet Transcription**: Converts songs into a PDF lead sheet with melody, chords, and lyrics (if lyrics processing is added in future). Uses **Sheet Sage V2** for structure/harmony and **Spotify Basic Pitch** for melody.
-*   **Polyphonic Piano Transcription**: Uses ByteDance's **Piano Transcription with Pedals** model to transcribe complex piano performances into accurate MIDI.
-*   **Melody & Pitch Bend Support**: Captures expressive nuances like pitch bends and polyphony when using the Basic Pitch mode.
-*   **Vocal Separation**: Integrated **Demucs** support to isolate vocals before transcription for cleaner melody detection.
-*   **Multi-Track Mixer**: Interactive web-based audio mixer to preview results, seamlessly blending between Original Audio, Synthesized MIDI, and Separated Vocals.
-*   **GPU Acceleration**: Fully supports NVIDIA GPUs for fast inference using CUDA 12.1 and ONNX Runtime.
+## ✨ Key Features
 
-## Installation & Setup
+### 🎵 Multiple Transcription Modes
+- **Lead Sheet (Standard)** - Melody + Chords + Key + Tempo detection
+- **Piano (Polyphonic)** - Full piano transcription with pedal detection
+- **Basic Pitch (Polyphonic)** - Spotify's model with pitch bend support
+- **Drums (Omnizart)** - Drum kit transcription
+- **SheetSage V3 (Lunaverus)** - Custom CNN trained on MAESTRO dataset
 
-Sheet Sage depends on a few heavy-weight libraries (PyTorch 2.x, FluidSynth, LilyPond, FFmpeg).
-We provide a **One-Click Setup Script** to handle everything automatically.
+### 🎨 Professional Native UI
+- **AnthemScore-Inspired Design** - Clean, modern dark theme
+- **Dialog-Based Workflow** - Intuitive: Open → Configure → Transcribe
+- **Real-Time Piano Roll** - Visualize notes with spectrogram background
+- **Audio Mixer** - Synchronized playback with independent volume controls
+- **Live Progress Tracking** - See transcription status in real-time
+
+### 🚀 Advanced Features
+- **Vocal Separation** - Integrated Demucs for cleaner melody extraction
+- **GPU Acceleration** - CUDA-optimized for fast processing
+- **Sheet Music Export** - Professional PDF generation via LilyPond
+- **MIDI Synthesis** - High-quality audio preview with FluidSynth
+- **Batch Processing** - Queue multiple files (future feature)
+
+## 📦 Installation
 
 ### Prerequisites
-*   **Windows 10/11** (Currently optimized for Windows)
-*   **NVIDIA GPU** (Highly Recommended for fast transcription)
-*   **Git** installed and available in PATH.
-*   *Note: Python is embedded and managed automatically by the setup script.*
+- **Windows 10/11** (Primary platform)
+- **NVIDIA GPU** (Recommended for faster processing)
+- **Git** (for cloning repository)
 
 ### One-Click Setup
-1.  **Clone the Repository**:
-    ```bash
-    git clone https://github.com/AgentHitmanFaris/sheetsageV2.git
-    cd sheetsageV2
-    ```
 
-2.  **Run the Setup Script**:
-    Double-click or run `setup_local.bat` in a terminal.
-    ```powershell
-    ./setup_local.bat
-    ```
-    This script will:
-    *   Download a portable Python 3.11 environment.
-    *   Install all Python dependencies (including PyTorch 2.8.0 with CUDA 12.1).
-    *   Download necessary system tools (FFmpeg, FluidSynth, LilyPond) into the project folder.
-    *   **Note**: The setup might take a while as it downloads large machine learning models.
+1. **Clone Repository**
+   ```bash
+   git clone https://github.com/AgentHitmanFaris/sheetsageV2.git
+   cd sheetsageV2
+   ```
 
-## Usage
+2. **Run Setup**
+   ```bash
+   setup_local.bat
+   ```
+   
+   This automatically:
+   - Downloads embedded Python 3.11
+   - Installs PyTorch 2.8.0 with CUDA 12.1
+   - Fetches all AI models
+   - Configures system tools (FFmpeg, FluidSynth, LilyPond)
 
-### Launching the Interface
-Double-click `run_local.bat` to start the web interface.
-```powershell
-./run_local.bat
+## 🎯 Usage
+
+### Launch Application
+```bash
+run_local.bat
 ```
-The interface will open automatically in your browser at `http://127.0.0.1:7860`.
 
-### Transcription Modes
+The native UI will open automatically with a clean interface.
 
-1.  **Lead Sheet (Standard)**:
-    *   Best for: Pop songs, jazz standards, or any track where you want a simplified "Melody + Chords" lead sheet.
-    *   Options: Enable "Separate Vocals" for better melody accuracy on full mixes.
+### Workflow
 
-2.  **Piano (Polyphonic)**:
-    *   Best for: Solo piano recordings.
-    *   Output: A highly detailed MIDI file capturing all notes and pedal usage.
+1. **Click "📂 Open..."** to select your audio file
+2. **Configure Settings** in the popup dialog:
+   - Choose transcription mode
+   - Enable/disable vocal separation
+   - Set time range (full song or section)
+   - Adjust display settings
+3. **Click "✓ Start Transcription"**
+4. **View Results** in the piano roll and log panel
+5. **Play Back** using the audio mixer
 
-    *   Best for: Getting raw, expressive MIDI (including pitch bends) from any instrument.
-    *   Output: MIDI files (both quantized for sheet music and raw for DAW usage).
+### Transcription Modes Explained
 
-### New Features (v0.3.3)
-*   **History Tab**: Easily browse and reload previous transcription projects.
-    *   Organized by **Song Name** and **Timestamp**.
-    *   One-click restore of the full mixer state and piano roll.
+| Mode | Best For | Output | Processing Time |
+|------|----------|--------|----------------|
+| **Lead Sheet** | Pop, Jazz, Standards | Melody + Chords PDF | ~2 min |
+| **Piano** | Solo Piano | Detailed MIDI + Pedals | ~1 min |
+| **Basic Pitch** | All Instruments | Polyphonic MIDI | ~1 min |
+| **Drums** | Drum Tracks | Drum MIDI | ~2 min |
+| **Lunaverus** | Classical Piano | High-Accuracy MIDI | ~1 min |
 
-## Troubleshooting & Recent Fixes (v0.3.3+)
+*Times based on 3-minute song with GTX 1060 GPU*
 
-### Solved Issues
-*   **Audio Playback 404 Errors**: Resolved by implementing a secure file caching system (`temp_playback` folder). The application now safely copies files for the web player to access, bypassing complex Windows path permission issues.
-*   **Audio Truncation**: Fixed an issue where only the first 30 seconds of audio would play. The mixer now correctly loads the full processed audio file.
-*   **Restart Loops**: Improved the "Restart App" stability. It now performs an in-place restart without opening multiple browser tabs.
-    *   *Note*: If the app hangs during restart, you may need to manually refresh the page (F5).
+## 🏗️ Architecture
 
-### Common Questions
-*   **"No audio file provided" Warning**: The application will now warn you if you try to transcribe without uploading a file. This is a safety feature to prevent crashes.
-*   **Vocals Track is Muted**: In the "Preview" mixer, the **Vocals** track is loaded but set to **0% volume** by default. This is intentional to let you hear the transcription clearly. You can unmute it manually.
-*   **Slow Transcription**: Ensure your GPU is detected. Check the console log for "Hardware Detected: GPU".
-*   **Missing Dependencies**: If `setup_local.bat` fails, try running it again or check your internet connection.
+### Technology Stack
+- **Frontend**: PySide6 (Qt for Python)
+- **Backend**: Python 3.11 Embedded
+- **Audio Processing**: librosa, FFmpeg
+- **AI Models**:
+  - Sheet Sage V2 (Harmony/Structure)
+  - Spotify Basic Pitch (Melody/Polyphony)
+  - Demucs (Vocal Separation)
+  - ByteDance Piano Transcription
+  - Omnizart (Drums)
+  - Lunaverus CNN (Custom Model)
+- **Rendering**: LilyPond (Notation), FluidSynth (Audio)
 
-## Architecture
+### Project Structure
+```
+sheetsageV2/
+├── SheetSage_Core/          # Core transcription engine
+│   ├── sheetsage/           # Python package
+│   ├── scripts/             # Inference scripts
+│   ├── libs/                # Bundled tools (LilyPond, FluidSynth)
+│   └── cache/               # Model cache
+├── newUI/                   # Native Qt application
+│   ├── widgets/             # UI components
+│   ├── workers/             # Background processing
+│   └── resources/           # Styles, icons
+└── static/                  # Web assets (legacy)
+```
 
-*   **Frontend**: Gradio (Web UI)
-*   **Backend**: Python 3.11 (Embedded)
-*   **Models**:
-    *   Sheet Sage V2 (Transformer-based Harmony/Beat Tracking)
-    *   Spotify Basic Pitch (Melody/Polyphonic Transcription)
-    *   Demucs (Source Separation)
-    *   ByteDance Piano Transcription (Piano MIDI)
-*   **Rendering**: LilyPond (Sheet Music), FluidSynth (Audio Preview)
+## 🐛 Troubleshooting
 
-## License
+### Common Issues
 
-[MIT License](LICENSE) (Check individual model licenses for commercial usage)
+**GPU Not Detected**
+- Verify CUDA installation: `nvidia-smi`
+- Check PyTorch: `python -c "import torch; print(torch.cuda.is_available())"`
+
+**Permission Denied Errors**
+- Run as Administrator (Windows)
+- Check antivirus isn't blocking file writes
+
+**Slow Transcription**
+- Ensure GPU mode is enabled
+- Close other GPU-intensive applications
+- Try shorter audio segments first
+
+**Missing Dependencies**
+- Re-run `setup_local.bat`
+- Check internet connection
+- Manual install: `pip install -r SheetSage_Core/requirements.txt`
+
+### Recent Fixes (v0.4.0)
+- ✅ Fixed Basic Pitch permission errors
+- ✅ Fixed Lunaverus import issues
+- ✅ Improved UI responsiveness
+- ✅ Removed redundant UI elements
+
+## 🗺️ Roadmap
+
+- [ ] macOS/Linux support
+- [ ] Real-time transcription (live input)
+- [ ] Batch processing queue
+- [ ] Custom model training UI
+- [ ] MIDI editing in piano roll
+- [ ] Audio effects (reverb, EQ)
+- [ ] Export to MusicXML
+- [ ] Cloud model hosting
+
+## 📝 License
+
+MIT License - See [LICENSE](LICENSE) for details
+
+**Note**: Individual AI models may have separate licenses. Check model documentation for commercial usage restrictions.
+
+## 🙏 Acknowledgments
+
+- **Spotify** - Basic Pitch model
+- **ByteDance** - Piano Transcription model
+- **Meta/Facebook** - Demucs source separation
+- **Music-and-Culture-Technology-Lab** - Omnizart
+- **LilyPond Project** - Music engraving
+- **AnthemScore** - UI design inspiration
+
+## 📧 Contact
+
+- **GitHub**: [AgentHitmanFaris/sheetsageV2](https://github.com/AgentHitmanFaris/sheetsageV2)
+- **Issues**: [Report bugs here](https://github.com/AgentHitmanFaris/sheetsageV2/issues)
+
+---
+
+**Version**: 0.4.0  
+**Last Updated**: December 22, 2025  
+**Status**: Active Development

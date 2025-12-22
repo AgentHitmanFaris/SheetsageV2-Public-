@@ -67,7 +67,24 @@ if (Test-Path $CudaLibs) {
     $Env:CUDA_PATH = $CudaLibs
     $Env:CUDA_PATH_V11_2 = $CudaLibs
     Write-Host "Added local CUDA libraries to PATH: $CudaLibs"
+    Write-Host "Added local CUDA libraries to PATH: $CudaLibs"
 }
+
+# --- Prevent C: Drive Leaks ---
+# Redirect generic temporary files to local directory
+$LocalTemp = Join-Path $RootDir "temp"
+if (-not (Test-Path $LocalTemp)) {
+    New-Item -ItemType Directory -Path $LocalTemp -Force | Out-Null
+}
+$Env:TEMP = $LocalTemp
+$Env:TMP = $LocalTemp
+$Env:SHEETSAGE_TEMP = $LocalTemp
+Write-Host "Redirected TEMP files to: $LocalTemp"
+
+# Redirect AI Model Caches (HuggingFace, Torch)
+$Env:HF_HOME = Join-Path $RootDir "cache\huggingface"
+$Env:TORCH_HOME = Join-Path $RootDir "cache\torch"
+Write-Host "Redirected Model Caches to: $RootDir\cache"
 
 # Run the Gradio interface
 Write-Host "Starting Gradio Interface..."
@@ -86,22 +103,22 @@ else {
 }
 
 # Run the Gradio interface
-Write-Host "Starting Gradio Interface..."
+# Run the Native UI Interface
+Write-Host "Starting Sheet Sage Native UI..."
 Write-Host "Using Python: $PythonExec"
+
+# Path to new UI launcher
+$LauncherPath = Join-Path $RootDir "..\newUI\launcher.py"
+
 # Loop for restart capability (Exit Code 42 = Restart)
 $ExitCode = 42
 $ScriptArgs = @($args) # Copy args to a modifiable array
 
 while ($ExitCode -eq 42) {
-    & $PythonExec launch_gradio.py $ScriptArgs
+    & $PythonExec $LauncherPath $ScriptArgs
     $ExitCode = $LASTEXITCODE
     if ($ExitCode -eq 42) {
         Write-Host "Restarting Sheet Sage..." -ForegroundColor Cyan
         Start-Sleep -Seconds 1
-        
-        # On restart, don't open a new browser tab; the existing one will refresh.
-        if ($ScriptArgs -notcontains "--no-browser") {
-             $ScriptArgs += "--no-browser"
-        }
     }
 }

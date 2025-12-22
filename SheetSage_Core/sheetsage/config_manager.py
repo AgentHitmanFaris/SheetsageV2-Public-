@@ -24,3 +24,5 @@ def save_config(config):
     with open(CONFIG_FILE, "w") as f:
         json.dump(config, f, indent=4)
 
+# Initialize global configuration instance
+current_config = load_config()

@@ -108,7 +108,7 @@ def compute_cqt(audio_path, sr=22050):
         print(f"CQT Error: {e}")
         return None, None
 
-def run_inference(audio_path, model_weights_path=None, device='cpu'):
+def run_lunaverus(audio_path, model_weights_path=None, device='cpu'):
     """
     Runs the full inference pipeline.
     """
@@ -245,3 +245,5 @@ def run_inference(audio_path, model_weights_path=None, device='cpu'):
     
     print(f"Inference Complete. Generated {len(piano.notes)} notes.")
     return output_midi
+
+run_inference = run_lunaverus

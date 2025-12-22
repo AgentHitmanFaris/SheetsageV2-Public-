@@ -301,7 +301,7 @@ if (Test-Path "$CacheDir/sheetsage") {
 # --- 6. Post-Install Verification ---
 Write-Host "--- 6. Verifying Installation ---"
 try {
-    & $PythonExe -c "import gradio, torch, validators, demucs, piano_transcription_inference; print('All key dependencies importable.')"
+    & $PythonExe -c "import PySide6, torch, validators, demucs, piano_transcription_inference; print('All key dependencies importable.')"
 } catch {
     Write-Warning "Post-install verification failed. Some dependencies might be missing."
 }

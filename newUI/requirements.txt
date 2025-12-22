@@ -1,0 +1,16 @@
+# SheetSage Native UI Requirements
+# PySide6-based Windows desktop application
+
+# Core GUI framework
+PySide6>=6.6.0
+PySide6-Addons>=6.6.0
+
+# Audio playback (Qt Multimedia backend)
+# Already included in PySide6-Addons
+
+# Testing
+pytest>=7.4.0
+pytest-qt>=4.2.0
+
+# Note: Backend dependencies are in ../SheetSage_Core/requirements.txt
+# This file only contains native UI-specific dependencies

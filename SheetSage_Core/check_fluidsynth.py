@@ -1,7 +1,7 @@
 import os
 import sys
 
-# Add bin to DLL search path (mimic launch_gradio.py)
+# Add bin to DLL search path (mimic runtime environment)
 bin_dir = os.path.join(os.getcwd(), "bin")
 if os.path.exists(bin_dir):
     try:
