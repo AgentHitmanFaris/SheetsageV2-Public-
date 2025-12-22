@@ -1,4 +1,4 @@
-# Sheet Sage V2 - Professional Audio Transcription
+# Sheet Sage V3 - Professional Audio Transcription
 
 ![Sheet Sage Logo](ic_logo.png)
 
