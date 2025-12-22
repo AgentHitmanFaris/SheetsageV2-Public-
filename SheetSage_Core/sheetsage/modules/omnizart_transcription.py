@@ -83,13 +83,16 @@ def run_omnizart(audio_path, output_dir_str, mode="drum", callback=None):
         print(f"Running Omnizart ({mode}) subprocess...")
         
         # 3. Execute with Popen
-        # Add CUDA 11.0 libs to PATH for this subprocess
-        import os
+        # Add CUDA 11.2 libs to PATH for this subprocess
         env = os.environ.copy()
-        cuda_110_path = pathlib.Path(os.getcwd()) / "cuda_libs"
-        if cuda_110_path.exists():
-            env['PATH'] = str(cuda_110_path) + os.pathsep + env.get('PATH', '')
-            print(f"Added CUDA 11.0 path: {cuda_110_path}")
+        cuda_112_path = pathlib.Path(os.getcwd()) / "cuda_libs"
+        if cuda_112_path.exists():
+            env['PATH'] = str(cuda_112_path) + os.pathsep + env.get('PATH', '')
+            print(f"Added CUDA 11.2 path: {cuda_112_path}")
+        else:
+            # Fallback to CPU if libs not found
+            env['CUDA_VISIBLE_DEVICES'] = ''
+            print(f"CUDA libs not found, using CPU mode")
         
         # Start timer
         t_thread = threading.Thread(target=timer_loop, daemon=True)
@@ -137,6 +140,8 @@ def run_omnizart(audio_path, output_dir_str, mode="drum", callback=None):
         
         if process.returncode != 0:
             logging.error(f"Omnizart process returned non-zero exit code: {process.returncode}")
+            if process.returncode == 3221226505:
+                print("Error: Exit code 3221226505 detected. This usually indicates a missing 'zlibwapi.dll' required by cuDNN.")
             return None
             
         # 4. Find Output File

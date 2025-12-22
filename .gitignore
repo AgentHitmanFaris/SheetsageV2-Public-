@@ -42,6 +42,7 @@ temp/
 *.log
 .sheetsage/
 omnizart_env/
+newUI/
 
 # Large Files
 *.pt
