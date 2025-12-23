@@ -5,9 +5,74 @@ FL Studio-style piano roll with spectrogram background and manual note editing
 
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QScrollArea, QPushButton, QLabel
 from PySide6.QtCore import Qt, QRect, QPoint, Signal, QTimer
-from PySide6.QtGui import QPainter, QColor, QPen, QBrush, QFont, QImage, QPalette
+from PySide6.QtGui import QPainter, QColor, QPen, QBrush, QFont, QImage, QPalette, QCursor, QUndoStack, QUndoCommand
 import numpy as np
 import os
+
+
+# ===== Undo Commands for Piano Roll Editing =====
+
+class AddNoteCommand(QUndoCommand):
+    """Command to add a note (undoable)"""
+    def __init__(self, canvas, note_data, description="Add Note"):
+        super().__init__(description)
+        self.canvas = canvas
+        self.note_data = note_data.copy()
+    
+    def redo(self):
+        self.canvas.notes.append(self.note_data.copy())
+        self.canvas.update()
+    
+    def undo(self):
+        # Find and remove the note
+        for i, n in enumerate(self.canvas.notes):
+            if (n['pitch'] == self.note_data['pitch'] and 
+                abs(n['start'] - self.note_data['start']) < 0.01):
+                self.canvas.notes.pop(i)
+                break
+        self.canvas.update()
+
+
+class DeleteNoteCommand(QUndoCommand):
+    """Command to delete a note (undoable)"""
+    def __init__(self, canvas, note_data, index, description="Delete Note"):
+        super().__init__(description)
+        self.canvas = canvas
+        self.note_data = note_data.copy()
+        self.index = index
+    
+    def redo(self):
+        # Find and remove the note
+        for i, n in enumerate(self.canvas.notes):
+            if (n['pitch'] == self.note_data['pitch'] and 
+                abs(n['start'] - self.note_data['start']) < 0.01):
+                self.canvas.notes.pop(i)
+                break
+        self.canvas.update()
+    
+    def undo(self):
+        self.canvas.notes.insert(self.index, self.note_data.copy())
+        self.canvas.update()
+
+
+class MoveNoteCommand(QUndoCommand):
+    """Command to move/resize a note (undoable)"""
+    def __init__(self, canvas, index, old_data, new_data, description="Move Note"):
+        super().__init__(description)
+        self.canvas = canvas
+        self.index = index
+        self.old_data = old_data.copy()
+        self.new_data = new_data.copy()
+    
+    def redo(self):
+        if self.index < len(self.canvas.notes):
+            self.canvas.notes[self.index] = self.new_data.copy()
+            self.canvas.update()
+    
+    def undo(self):
+        if self.index < len(self.canvas.notes):
+            self.canvas.notes[self.index] = self.old_data.copy()
+            self.canvas.update()
 
 
 class PianoRollEditor(QWidget):
@@ -16,6 +81,8 @@ class PianoRollEditor(QWidget):
     note_added = Signal(int, float, float)  # pitch, start_time, duration
     note_removed = Signal(int, float)  # pitch, start_time
     note_modified = Signal(int, float, float, float)  # pitch, old_start, new_start, new_duration
+    midi_saved = Signal(str)  # path where MIDI was saved
+    note_preview = Signal(int) # pitch
     
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -40,6 +107,10 @@ class PianoRollEditor(QWidget):
         self.resizing_note = None
         
         self.current_playback_time = 0.0
+        self.current_midi_path = None  # Store loaded MIDI path for saving
+        
+        # Undo/Redo system
+        self.undo_stack = QUndoStack(self)
         
         self._setup_ui()
     
@@ -74,21 +145,47 @@ class PianoRollEditor(QWidget):
         # Toolbar
         toolbar = QHBoxLayout()
         
-        clear_btn = QPushButton("🗑️ Clear All Notes")
+        # Save button
+        save_btn = QPushButton("💾 Save MIDI")
+        save_btn.clicked.connect(self.save_midi)
+        save_btn.setToolTip("Save edited MIDI (Ctrl+S)")
+        toolbar.addWidget(save_btn)
+        
+        # Undo button
+        undo_btn = QPushButton("↶ Undo")
+        undo_btn.clicked.connect(self.undo_stack.undo)
+        undo_btn.setToolTip("Undo last action (Ctrl+Z)")
+        undo_btn.setEnabled(False)
+        toolbar.addWidget(undo_btn)
+        self.undo_stack.canUndoChanged.connect(undo_btn.setEnabled)
+        
+        # Redo button
+        redo_btn = QPushButton("↷ Redo")
+        redo_btn.clicked.connect(self.undo_stack.redo)
+        redo_btn.setToolTip("Redo last action (Ctrl+Y)")
+        redo_btn.setEnabled(False)
+        toolbar.addWidget(redo_btn)
+        self.undo_stack.canRedoChanged.connect(redo_btn.setEnabled)
+        
+        toolbar.addWidget(QLabel("  |  "))  # Separator
+        
+        clear_btn = QPushButton("🗑️ Clear All")
         clear_btn.clicked.connect(self.clear_notes)
         toolbar.addWidget(clear_btn)
         
-        zoom_in_btn = QPushButton("🔍 Zoom In")
+        zoom_in_btn = QPushButton("🔍+")
         zoom_in_btn.clicked.connect(self.zoom_in)
+        zoom_in_btn.setToolTip("Zoom In (Ctrl++)")
         toolbar.addWidget(zoom_in_btn)
         
-        zoom_out_btn = QPushButton("🔍 Zoom Out")
+        zoom_out_btn = QPushButton("🔍-")
         zoom_out_btn.clicked.connect(self.zoom_out)
+        zoom_out_btn.setToolTip("Zoom Out (Ctrl+-)")
         toolbar.addWidget(zoom_out_btn)
         
         toolbar.addStretch()
         
-        self.info_label = QLabel("Click to add notes | Drag to move | Right edge to resize")
+        self.info_label = QLabel("Left-click: Add/Select | Drag: Move | Edges: Resize | Right-click: Delete | Ctrl+Z/Y: Undo/Redo")
         self.info_label.setStyleSheet("color: #999; font-size: 9pt;")
         toolbar.addWidget(self.info_label)
         
@@ -101,9 +198,12 @@ class PianoRollEditor(QWidget):
         scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
         
         self.canvas = PianoRollCanvas(self)
+        self.canvas.undo_stack = self.undo_stack  # Share undo stack
         self.canvas.note_added.connect(self.note_added)
         self.canvas.note_removed.connect(self.note_removed)
+        self.canvas.note_removed.connect(self.note_removed)
         self.canvas.note_modified.connect(self.note_modified)
+        self.canvas.note_preview.connect(self.note_preview)
         
         scroll.setWidget(self.canvas)
         layout.addWidget(scroll)
@@ -114,6 +214,7 @@ class PianoRollEditor(QWidget):
         """Load MIDI file and display notes"""
         try:
             import pretty_midi
+            self.current_midi_path = midi_path  # Store for saving
             midi_data = pretty_midi.PrettyMIDI(midi_path)
             
             # Extract notes
@@ -161,6 +262,60 @@ class PianoRollEditor(QWidget):
         except Exception as e:
             print(f"Error loading spectrogram: {e}")
     
+    def save_midi(self, filepath=None):
+        """Save edited MIDI to file. If filepath is None, prompt user."""
+        if not self.notes:
+            print("No notes to save")
+            return
+        
+        try:
+            import pretty_midi
+            from PySide6.QtWidgets import QFileDialog
+            
+            if filepath:
+                save_path = filepath
+            else:
+                # Determine save path
+                if self.current_midi_path:
+                    # Save to same path or prompt for new name
+                    default_path = self.current_midi_path.replace('.mid', '_edited.mid')
+                else:
+                    default_path = 'output.mid'
+                
+                save_path, _ = QFileDialog.getSaveFileName(
+                    self,
+                    "Save MIDI File",
+                    default_path,
+                    "MIDI Files (*.mid *.midi)"
+                )
+            
+            if not save_path:
+                return  # User cancelled
+            
+            # Create MIDI file
+            midi = pretty_midi.PrettyMIDI()
+            instrument = pretty_midi.Instrument(program=0)  # Acoustic Grand Piano
+            
+            # Add notes
+            for note_data in self.notes:
+                note = pretty_midi.Note(
+                    velocity=100,
+                    pitch=note_data['pitch'],
+                    start=note_data['start'],
+                    end=note_data['start'] + note_data['duration']
+                )
+                instrument.notes.append(note)
+            
+            midi.instruments.append(instrument)
+            midi.write(save_path)
+            
+            self.current_midi_path = save_path
+            self.midi_saved.emit(save_path)
+            print(f"MIDI saved to: {save_path}")
+            
+        except Exception as e:
+            print(f"Error saving MIDI: {e}")
+    
     def clear_notes(self):
         """Clear all notes"""
         self.notes.clear()
@@ -176,6 +331,20 @@ class PianoRollEditor(QWidget):
         """Decrease zoom level"""
         self.canvas.pixels_per_second = max(self.canvas.pixels_per_second / 1.5, 20)
         self.canvas.update_size(self.audio_duration, self.min_pitch, self.max_pitch)
+    
+    def wheelEvent(self, event):
+        """Handle mouse wheel - Ctrl+Scroll for zoom"""
+        if event.modifiers() & Qt.ControlModifier:
+            # Ctrl+Scroll = Zoom
+            delta = event.angleDelta().y()
+            if delta > 0:
+                self.zoom_in()
+            elif delta < 0:
+                self.zoom_out()
+            event.accept()
+        else:
+            # Normal scroll - pass to scroll area
+            super().wheelEvent(event)
 
 
 class PianoRollCanvas(QWidget):
@@ -184,6 +353,7 @@ class PianoRollCanvas(QWidget):
     note_added = Signal(int, float, float)
     note_removed = Signal(int, float)
     note_modified = Signal(int, float, float, float)
+    note_preview = Signal(int)
     
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -197,10 +367,25 @@ class PianoRollCanvas(QWidget):
         self.key_height = 12
         self.pixels_per_second = 100
         
+        # Editing state
         self.selected_note_idx = None
         self.dragging = False
         self.drag_start = None
         self.drag_note_start = None
+        self.drag_note_pitch = None  # For vertical dragging
+        
+        # Resizing state
+        self.resizing = False
+        self.resize_edge = None  # 'left' or 'right'
+        self.resize_original_duration = None
+        self.resize_original_start = None
+        
+        # Interaction modes
+        self.hover_note_idx = None
+        self.hover_edge = None  # Which edge we're hovering over
+        
+        # Undo stack (will be set by parent)
+        self.undo_stack = None
         
         self.setMouseTracking(True)
         self.setMinimumSize(800, 600)
@@ -366,12 +551,27 @@ class PianoRollCanvas(QWidget):
             painter.setOpacity(1.0)
     
     def mousePressEvent(self, event):
-        """Handle mouse press - add or select note"""
+        """Handle mouse press - add, select, or resize note"""
         if event.button() == Qt.LeftButton:
             x = event.pos().x()
             y = event.pos().y()
             
-            # Check if clicking on existing note
+            # First check if clicking on a resize edge
+            edge_info = self._get_note_edge_at_position(x, y)
+            if edge_info is not None:
+                idx, edge = edge_info
+                self.selected_note_idx = idx
+                self.resizing = True
+                self.resize_edge = edge
+                self.drag_start = event.pos()
+                self.resize_original_duration = self.notes[idx]['duration']
+                self.resize_original_start = self.notes[idx]['start']
+                # Save original state for undo
+                self.resize_original_note = self.notes[idx].copy()
+                self.setCursor(QCursor(Qt.SizeHorCursor))
+                return
+            
+            # Check if clicking on existing note (not edge)
             clicked_note = self._get_note_at_position(x, y)
             
             if clicked_note is not None:
@@ -379,7 +579,11 @@ class PianoRollCanvas(QWidget):
                 self.dragging = True
                 self.drag_start = event.pos()
                 self.drag_note_start = self.notes[clicked_note]['start']
+                self.drag_note_pitch = self.notes[clicked_note]['pitch']
+                # Save original state for undo
+                self.drag_original_note = self.notes[clicked_note].copy()
                 self.update()
+                self.note_preview.emit(self.notes[clicked_note]['pitch'])
             elif x > self.key_width:
                 # Add new note
                 pitch = self._y_to_pitch(y)
@@ -391,9 +595,15 @@ class PianoRollCanvas(QWidget):
                         'start': start_time,
                         'duration': 0.5  # Default duration
                     }
-                    self.notes.append(new_note)
+                    # Use undo command for add
+                    if hasattr(self, 'undo_stack') and self.undo_stack:
+                        cmd = AddNoteCommand(self, new_note)
+                        self.undo_stack.push(cmd)
+                    else:
+                        self.notes.append(new_note)
                     self.selected_note_idx = len(self.notes) - 1
                     self.note_added.emit(pitch, start_time, 0.5)
+                    self.note_preview.emit(pitch)
                     self.update()
         
         elif event.button() == Qt.RightButton:
@@ -401,32 +611,129 @@ class PianoRollCanvas(QWidget):
             clicked_note = self._get_note_at_position(event.pos().x(), event.pos().y())
             if clicked_note is not None:
                 note = self.notes[clicked_note]
-                self.notes.pop(clicked_note)
+                # Use undo command for delete
+                if hasattr(self, 'undo_stack') and self.undo_stack:
+                    cmd = DeleteNoteCommand(self, note, clicked_note)
+                    self.undo_stack.push(cmd)
+                else:
+                    self.notes.pop(clicked_note)
                 self.selected_note_idx = None
                 self.note_removed.emit(note['pitch'], note['start'])
                 self.update()
     
     def mouseMoveEvent(self, event):
-        """Handle mouse move - drag note"""
-        if self.dragging and self.selected_note_idx is not None:
-            delta_x = event.pos().x() - self.drag_start.x()
+        """Handle mouse move - drag note, resize, or update cursor"""
+        x = event.pos().x()
+        y = event.pos().y()
+        
+        # Handle resizing
+        if self.resizing and self.selected_note_idx is not None:
+            note = self.notes[self.selected_note_idx]
+            delta_x = x - self.drag_start.x()
             delta_time = delta_x / self.pixels_per_second
             
-            new_start = max(0, self.drag_note_start + delta_time)
-            old_start = self.notes[self.selected_note_idx]['start']
-            self.notes[self.selected_note_idx]['start'] = new_start
+            if self.resize_edge == 'right':
+                # Resize from right edge (change duration)
+                new_duration = max(0.1, self.resize_original_duration + delta_time)
+                note['duration'] = new_duration
+            elif self.resize_edge == 'left':
+                # Resize from left edge (change start and duration)
+                new_start = max(0, self.resize_original_start + delta_time)
+                duration_change = new_start - self.resize_original_start
+                new_duration = max(0.1, self.resize_original_duration - duration_change)
+                note['start'] = new_start
+                note['duration'] = new_duration
             
             self.update()
+            return
+        
+        # Handle dragging (both horizontal and vertical)
+        if self.dragging and self.selected_note_idx is not None:
+            delta_x = x - self.drag_start.x()
+            delta_y = y - self.drag_start.y()
+            
+            # Calculate new time (horizontal)
+            delta_time = delta_x / self.pixels_per_second
+            new_start = max(0, self.drag_note_start + delta_time)
+            
+            # Calculate new pitch (vertical)
+            delta_rows = -delta_y // self.key_height  # Negative because y increases downward
+            new_pitch = self.drag_note_pitch + delta_rows
+            new_pitch = max(self.min_pitch, min(self.max_pitch, new_pitch))
+            
+            # Update note
+            self.notes[self.selected_note_idx]['start'] = new_start
+            self.notes[self.selected_note_idx]['pitch'] = new_pitch
+            
+            self.update()
+            return
+        
+        # Update cursor based on hover
+        edge_info = self._get_note_edge_at_position(x, y)
+        if edge_info is not None:
+            self.setCursor(QCursor(Qt.SizeHorCursor))
+            self.hover_note_idx = edge_info[0]
+            self.hover_edge = edge_info[1]
+        else:
+            note_idx = self._get_note_at_position(x, y)
+            if note_idx is not None:
+                self.setCursor(QCursor(Qt.SizeAllCursor))
+                self.hover_note_idx = note_idx
+                self.hover_edge = None
+            else:
+                self.setCursor(QCursor(Qt.ArrowCursor))
+                self.hover_note_idx = None
+                self.hover_edge = None
     
     def mouseReleaseEvent(self, event):
         """Handle mouse release"""
-        if self.dragging and self.selected_note_idx is not None:
+        if (self.dragging or self.resizing) and self.selected_note_idx is not None:
             note = self.notes[self.selected_note_idx]
-            self.note_modified.emit(note['pitch'], self.drag_note_start, 
-                                  note['start'], note['duration'])
+            
+            if self.dragging:
+                # Push undo command for move
+                if hasattr(self, 'undo_stack') and self.undo_stack and hasattr(self, 'drag_original_note'):
+                    old_data = self.drag_original_note
+                    new_data = note.copy()
+                    # Only push command if note actually changed
+                    if old_data != new_data:
+                        # Restore original and let command handle the change
+                        self.notes[self.selected_note_idx] = old_data.copy()
+                        cmd = MoveNoteCommand(self, self.selected_note_idx, old_data, new_data, "Move Note")
+                        self.undo_stack.push(cmd)
+                
+                self.note_modified.emit(
+                    note['pitch'], 
+                    self.drag_note_start,
+                    note['start'], 
+                    note['duration']
+                )
+            elif self.resizing:
+                # Push undo command for resize
+                if hasattr(self, 'undo_stack') and self.undo_stack and hasattr(self, 'resize_original_note'):
+                    old_data = self.resize_original_note
+                    new_data = note.copy()
+                    # Only push command if note actually changed
+                    if old_data != new_data:
+                        # Restore original and let command handle the change
+                        self.notes[self.selected_note_idx] = old_data.copy()
+                        cmd = MoveNoteCommand(self, self.selected_note_idx, old_data, new_data, "Resize Note")
+                        self.undo_stack.push(cmd)
+                
+                self.note_modified.emit(
+                    note['pitch'],
+                    self.resize_original_start,
+                    note['start'],
+                    note['duration']
+                )
         
         self.dragging = False
+        self.resizing = False
         self.drag_start = None
+        self.resize_edge = None
+        self.drag_original_note = None
+        self.resize_original_note = None
+        self.setCursor(QCursor(Qt.ArrowCursor))
     
     def _get_note_at_position(self, x, y):
         """Get note index at position"""
@@ -457,3 +764,31 @@ class PianoRollCanvas(QWidget):
     def _x_to_time(self, x):
         """Convert X coordinate to time"""
         return max(0, (x - self.key_width) / self.pixels_per_second)
+    
+    def _get_note_edge_at_position(self, x, y):
+        """Check if position is near a note edge for resizing"""
+        edge_threshold = 8  # pixels
+        
+        for idx, note in enumerate(self.notes):
+            pitch = note['pitch']
+            start = note['start']
+            duration = note['duration']
+            
+            note_x = self.key_width + int(start * self.pixels_per_second)
+            note_y = (self.max_pitch - pitch) * self.key_height
+            note_w = max(int(duration * self.pixels_per_second), 5)
+            note_h = self.key_height
+            
+            # Check if y is within note
+            if not (note_y <= y <= note_y + note_h):
+                continue
+            
+            # Check for left edge
+            if abs(x - note_x) < edge_threshold:
+                return (idx, 'left')
+            
+            # Check for right edge
+            if abs(x - (note_x + note_w)) < edge_threshold:
+                return (idx, 'right')
+        
+        return None

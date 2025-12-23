@@ -17,7 +17,7 @@ class TranscriptionWorker(QThread):
     # Signals
     progress_update = Signal(str)  # Progress message
     progress_percent = Signal(int)  # Progress percentage (0-100)
-    finished = Signal(dict)  # Results: {midi_path, pdf_path, wav_path, etc.}
+    transcription_finished = Signal(dict)  # Results: {midi_path, pdf_path, wav_path, etc.}
     error = Signal(str)  # Error message
     
     def __init__(self, config: dict):
@@ -54,11 +54,44 @@ class TranscriptionWorker(QThread):
             
             if not self.is_cancelled:
                 self.progress_percent.emit(100)
-                self.finished.emit(result)
+                self.transcription_finished.emit(result)
         
         except Exception as e:
             if not self.is_cancelled:
-                self.error.emit(str(e))
+                import traceback
+                self.error.emit(f"{str(e)}\n\n{traceback.format_exc()}")
+    
+    def run_sync(self):
+        """Execute transcription synchronously (for batch processing)
+        Returns the result directly instead of emitting signals.
+        """
+        mode = self.config.get('mode', 'lead_sheet')
+        
+        # Map shorthand modes to full names for internal routing
+        mode_map = {
+            'lead_sheet': 'Lead Sheet (Standard)',
+            'piano': 'Piano (Polyphonic)',
+            'basic_pitch': 'Basic Pitch (Polyphonic)',
+            'drums': 'Drums (Omnizart)',
+            'lunaverus': 'SheetSage V3 (Lunaverus)'
+        }
+        
+        full_mode = mode_map.get(mode, mode)
+        self.config['mode'] = full_mode
+        
+        # Route to appropriate transcription function
+        if 'Lead Sheet' in full_mode:
+            return self._transcribe_lead_sheet()
+        elif 'Piano' in full_mode:
+            return self._transcribe_piano()
+        elif 'Basic Pitch' in full_mode:
+            return self._transcribe_basic_pitch()
+        elif 'Drums' in full_mode:
+            return self._transcribe_drums()
+        elif 'Lunaverus' in full_mode or 'V3' in full_mode:
+            return self._transcribe_lunaverus()
+        else:
+            raise ValueError(f"Unknown transcription mode: {mode}")
     
     def _transcribe_lead_sheet(self):
         """Transcribe using Lead Sheet (Standard) mode"""
@@ -270,6 +303,10 @@ class TranscriptionWorker(QThread):
         import pathlib
         from datetime import datetime
         
+        import subprocess
+        import sys
+        import shutil
+        
         audio_file = self.config['audio_file']
         
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -279,12 +316,65 @@ class TranscriptionWorker(QThread):
         os.makedirs(output_dir, exist_ok=True)
         output_dir_path = pathlib.Path(output_dir)
         
+        # Demucs Separation
+        vocals_path = None
+        if self.config.get('separate_vocals', False):
+            self.progress_update.emit("Separating vocals with Demucs...")
+            self.progress_percent.emit(10)
+            
+            sep_out_dir = output_dir_path / "demucs"
+            sep_out_dir.mkdir(parents=True, exist_ok=True)
+            
+            # Run Demucs
+            cmd = [
+                sys.executable, 
+                "-m", "demucs.separate",
+                "-n", "htdemucs",
+                "--two-stems=vocals",
+                "-o", str(sep_out_dir),
+                audio_file
+            ]
+            
+            try:
+                # Run with timeout/check
+                subprocess.run(cmd, check=True, capture_output=True)
+                
+                # Find vocals
+                # Structure: output/demucs/htdemucs/song_name/vocals.wav
+                vocals_candidate = sep_out_dir / "htdemucs" / pathlib.Path(filename).name / "vocals.wav"
+                
+                # Sometimes filename in demucs output might be different slightly (spaces vs underscores?)
+                # Try simple find
+                if not vocals_candidate.exists():
+                     # Fallback search
+                     candidates = list(sep_out_dir.glob("**/vocals.wav"))
+                     if candidates:
+                         vocals_candidate = candidates[0]
+                
+                if vocals_candidate.exists():
+                    # Move to main output dir for simpler bundling
+                    final_vocals = output_dir_path / "vocals.wav"
+                    shutil.copy2(str(vocals_candidate), str(final_vocals))
+                    vocals_path = str(final_vocals)
+                    
+            except Exception as e:
+                print(f"Demucs failed: {e}")
+                # Continue without vocals
+        
         self.progress_update.emit("Transcribing with Basic Pitch...")
         self.progress_percent.emit(40)
         
         target_midi_path = output_dir_path / "basic_pitch_transcription.midi"
-        transcribe_basic_pitch(audio_file, str(target_midi_path))
+        sys_result = transcribe_basic_pitch(audio_file, str(target_midi_path))
         midi_path = str(target_midi_path)
+        
+        # Extract metadata
+        metadata = {}
+        if isinstance(sys_result, dict) and 'metadata' in sys_result:
+            metadata = sys_result['metadata']
+        elif isinstance(sys_result, dict):
+             # Fallback if return format is different/old
+             pass
         
         self.progress_update.emit("Synthesizing audio...")
         self.progress_percent.emit(70)
@@ -299,7 +389,9 @@ class TranscriptionWorker(QThread):
             'synth_path': synth_path,
             'mixed_path': mixed_path,
             'original_path': original_segment,
-            'output_dir': output_dir
+            'output_dir': output_dir,
+            'metadata': metadata,
+            'vocals_path': vocals_path
         }
     
     def _transcribe_drums(self):

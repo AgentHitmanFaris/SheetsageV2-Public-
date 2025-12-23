@@ -7,8 +7,8 @@ Native Windows desktop application for SheetSage V3 music transcription suite.
 ### Running the Application
 
 ```bash
-cd d:/Document/sheetsage/newUI
-D:\Document\sheetsage\SheetSage_Core\python_embeded\python.exe launcher.py
+cd d:/Document/sheetsage/sheetsage_gui
+D:\Document\sheetsage\SheetSage_Core\python_embeded\python.exe main.py
 ```
 
 ### Development Status

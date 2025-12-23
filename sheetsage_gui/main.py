@@ -5,8 +5,10 @@ Main entry point for SheetSage Native UI
 import sys
 import os
 
-# Add both newUI and SheetSage_Core to path
+# Add SheetSage_Core to path
 current_dir = os.path.dirname(os.path.abspath(__file__))
+# Note: we are already in sheetsage_gui, so we don't need to add it to path if we run from top level,
+# but keeping current_dir for internal relative imports parity.
 sys.path.insert(0, current_dir)
 sys.path.insert(0, os.path.abspath(os.path.join(current_dir, '..', 'SheetSage_Core')))
 
@@ -60,7 +62,7 @@ def setup_logging():
 from PySide6.QtWidgets import QApplication
 from PySide6.QtGui import QIcon
 from PySide6.QtCore import Qt
-from main_window import MainWindow
+from ui.main_window import MainWindow
 
 
 def main():
@@ -76,7 +78,7 @@ def main():
     app.setApplicationVersion("3.0.0")
     
     # Set application icon
-    icon_path = os.path.join(os.path.dirname(__file__), 'resources', 'logo.png')
+    icon_path = os.path.join(os.path.dirname(__file__), 'assets', 'resources', 'logo.png')
     if os.path.exists(icon_path):
         app.setWindowIcon(QIcon(icon_path))
     
@@ -84,7 +86,7 @@ def main():
     app.setStyle('Fusion')
     
     # Load and apply stylesheet
-    stylesheet_path = os.path.join(os.path.dirname(__file__), 'resources', 'styles.qss')
+    stylesheet_path = os.path.join(os.path.dirname(__file__), 'assets', 'resources', 'styles.qss')
     if os.path.exists(stylesheet_path):
         with open(stylesheet_path, 'r', encoding='utf-8') as f:
             app.setStyleSheet(f.read())

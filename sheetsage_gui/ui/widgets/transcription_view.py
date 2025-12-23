@@ -18,6 +18,9 @@ class TranscriptionView(QWidget):
     
     # Signals
     file_download_requested = Signal(str)  # Emits file path to download
+    midi_saved = Signal(str)  # Emits path to saved MIDI file
+    live_notes_changed = Signal(list, bool) # notes, is_drum
+    note_preview_request = Signal(int, bool) # pitch, is_drum
     
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -64,13 +67,67 @@ class TranscriptionView(QWidget):
         results_layout = QVBoxLayout(self.results_tab)
         results_layout.setContentsMargins(0, 0, 0, 0)
         
+        # View Controls
+        view_controls = QHBoxLayout()
+        
+        # Metadata Labels
+        self.bpm_label = QLabel("Tempo: --")
+        self.key_label = QLabel("Key: --")
+        self.time_sig_label = QLabel("Time: --")
+        
+        # Style labels
+        label_style = """
+            QLabel {
+                background-color: #2a2a2a;
+                color: #e0e0e0;
+                padding: 4px 12px;
+                border-radius: 4px;
+                font-weight: bold;
+                border: 1px solid #3d3d3d;
+            }
+        """
+        for lbl in [self.bpm_label, self.key_label, self.time_sig_label]:
+            lbl.setStyleSheet(label_style)
+            view_controls.addWidget(lbl)
+        
+        view_controls.addStretch()
+        self.toggle_view_btn = QPushButton("🥁 Switch to Drum View")
+        self.toggle_view_btn.setCheckable(True)
+        self.toggle_view_btn.clicked.connect(self._on_toggle_view)
+        view_controls.addWidget(self.toggle_view_btn)
+        results_layout.addLayout(view_controls)
+        
         # Piano roll visualization
-        from widgets.piano_roll_editor import PianoRollEditor
+        # Piano roll visualization
+        from ui.widgets.piano_roll_editor import PianoRollEditor
         self.piano_roll = PianoRollEditor()
         self.piano_roll.note_added.connect(self._on_note_added)
         self.piano_roll.note_removed.connect(self._on_note_removed)
         self.piano_roll.note_modified.connect(self._on_note_modified)
+        self.piano_roll.midi_saved.connect(self.midi_saved)
+        # Live MIDI connections
+        self.piano_roll.note_preview.connect(lambda p: self.note_preview_request.emit(p, False))
+        self.piano_roll.note_added.connect(lambda *a: self._update_live_notes(False))
+        self.piano_roll.note_removed.connect(lambda *a: self._update_live_notes(False))
+        self.piano_roll.note_modified.connect(lambda *a: self._update_live_notes(False))
+        
         results_layout.addWidget(self.piano_roll)
+        
+        # Drum roll visualization (hidden by default)
+        from ui.widgets.drum_roll_editor import DrumRollEditor
+        self.drum_roll = DrumRollEditor()
+        self.drum_roll.setVisible(False)
+        self.drum_roll.note_added.connect(self._on_note_added)
+        self.drum_roll.note_removed.connect(self._on_note_removed)
+        self.drum_roll.note_modified.connect(self._on_note_modified)
+        self.drum_roll.midi_saved.connect(self.midi_saved)
+        # Live MIDI connections
+        self.drum_roll.note_preview.connect(lambda p: self.note_preview_request.emit(p, True))
+        self.drum_roll.note_added.connect(lambda *a: self._update_live_notes(True))
+        self.drum_roll.note_removed.connect(lambda *a: self._update_live_notes(True))
+        self.drum_roll.note_modified.connect(lambda *a: self._update_live_notes(True))
+        
+        results_layout.addWidget(self.drum_roll)
         
         # Info label
         self.results_info = QLabel("No transcription results yet. Start a transcription to see the piano roll visualization.")
@@ -155,25 +212,98 @@ class TranscriptionView(QWidget):
         self.log_console.setTextCursor(cursor)
         self.log_console.ensureCursorVisible()
     
-    def set_piano_roll_data(self, midi_path: str, audio_path: str = None):
-        """Load and display MIDI file in piano roll"""
+    def set_piano_roll_data(self, midi_path: str, audio_path: str = None, is_drum: bool = False):
+        """Load and display MIDI file in piano roll or drum roll"""
         try:
-            self.piano_roll.load_midi(midi_path)
-            if audio_path and os.path.exists(audio_path):
-                self.piano_roll.load_spectrogram(audio_path)
+            # Auto-detect drums from filename if not specified
+            if not is_drum and "drums" in os.path.basename(midi_path).lower():
+                is_drum = True
+                
+            if is_drum:
+                self.piano_roll.setVisible(False)
+                self.drum_roll.setVisible(True)
+                self.drum_roll.load_midi(midi_path)
+                self.toggle_view_btn.setChecked(True)
+                self.toggle_view_btn.setText("🎹 Switch to Piano Roll")
+                # Drum editor doesn't support spectrogram yet
+                self.log_success(f"Drum Editor loaded for percussion track")
+                self._update_live_notes(True)
+            else:
+                self.drum_roll.setVisible(False)
+                self.piano_roll.setVisible(True)
+                self.piano_roll.load_midi(midi_path)
+                self.toggle_view_btn.setChecked(False)
+                self.toggle_view_btn.setText("🥁 Switch to Drum View")
+                if audio_path and os.path.exists(audio_path):
+                    self.piano_roll.load_spectrogram(audio_path)
+                self.log_success(f"Piano Role visualization updated")
+                self._update_live_notes(False)
+                
             self.results_info.hide()
-            self.log_success(f"Piano roll visualization updated")
         except Exception as e:
             self.log_error(f"Failed to visualize MIDI: {e}")
-            self.results_info.setText(f"Failed to load MIDI visualization: {e}")
-            self.results_info.setText(f"Failed to load MIDI visualization: {e}")
+            self.results_info.setText(f"Failed to load visualization: {e}")
             self.results_info.show()
-    
+            
     def set_playback_time(self, seconds: float):
-        """Update piano roll playback position"""
-        if hasattr(self, 'piano_roll'):
+        """Update playback position"""
+        if self.piano_roll.isVisible():
             self.piano_roll.set_playback_position(seconds)
+        if self.drum_roll.isVisible():
+            self.drum_roll.set_playback_position(seconds)
+
+    def _update_live_notes(self, is_drum):
+        """Send current notes to mixer for live playback"""
+        editor = self.drum_roll if is_drum else self.piano_roll
+        if hasattr(editor, 'notes'):
+            self.live_notes_changed.emit(editor.notes, is_drum)
+            
+    def _on_toggle_view(self, checked):
+        """Toggle between Piano Roll and Drum View"""
+        is_drum = checked
+        if is_drum:
+            self.piano_roll.setVisible(False)
+            self.drum_roll.setVisible(True)
+            self.toggle_view_btn.setText("🎹 Switch to Piano Roll")
+            # Sync data if possible (though format differs)
+            if self.piano_roll.current_midi_path:
+                 self.drum_roll.load_midi(self.piano_roll.current_midi_path)
+            self._update_live_notes(True)
+        else:
+            self.drum_roll.setVisible(False)
+            self.piano_roll.setVisible(True)
+            self.toggle_view_btn.setText("🥁 Switch to Drum View")
+            if hasattr(self.drum_roll, 'current_midi_path') and self.drum_roll.current_midi_path:
+                 self.piano_roll.load_midi(self.drum_roll.current_midi_path)
+            self._update_live_notes(False)
+            
+    def _update_live_notes(self, is_drum):
+        """Send current notes to mixer for live playback"""
+        editor = self.drum_roll if is_drum else self.piano_roll
+        if hasattr(editor, 'notes'):
+            self.live_notes_changed.emit(editor.notes, is_drum)
     
+    def set_song_metadata(self, bpm=None, key=None, time_sig=None):
+        """Update song metadata display"""
+        if bpm:
+            self.bpm_label.setText(f"Tempo: {bpm}")
+            self.bpm_label.setStyleSheet(self.bpm_label.styleSheet().replace("#2a2a2a", "#2a2a2a")) # Ensure visible
+            self.bpm_label.show()
+        else:
+            self.bpm_label.hide()
+            
+        if key:
+            self.key_label.setText(f"Key: {key}")
+            self.key_label.show()
+        else:
+            self.key_label.hide()
+            
+        if time_sig:
+            self.time_sig_label.setText(f"Time: {time_sig}")
+            self.time_sig_label.show()
+        else:
+            self.time_sig_label.hide()
+            
     def _on_note_added(self, pitch, start, duration):
         """Handle manual note addition"""
         self.log_info(f"Note added: Pitch {pitch}, Start {start:.2f}s, Duration {duration:.2f}s")

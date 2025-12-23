@@ -46,6 +46,10 @@ def synthesize_midi(midi_path, soundfont_path, output_dir, filename="synth.wav")
         # However, pydub often likes integers if we load it later for mixing without warnings.
         
         # Normalize to avoid clipping
+        if audio.size == 0:
+            logging.info("Synthesized audio is empty (no notes detected?)")
+            return None
+            
         max_amp = np.max(np.abs(audio))
         logging.info(f"Synthesized audio max amplitude: {max_amp}")
         

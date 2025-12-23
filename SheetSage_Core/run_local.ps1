@@ -108,7 +108,7 @@ Write-Host "Starting Sheet Sage Native UI..."
 Write-Host "Using Python: $PythonExec"
 
 # Path to new UI launcher
-$LauncherPath = Join-Path $RootDir "..\newUI\launcher.py"
+$LauncherPath = Join-Path $RootDir "..\sheetsage_gui\main.py"
 
 # Loop for restart capability (Exit Code 42 = Restart)
 $ExitCode = 42

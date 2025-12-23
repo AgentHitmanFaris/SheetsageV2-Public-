@@ -1,0 +1,14 @@
+{
+    "output_dir": "D:\\Document\\sheetsage\\SheetSage_Core\\output",
+    "soundfont_path": "D:\\Document\\sheetsage\\SheetSage_Core\\..\\SheetSage_Core\\soundfont\\MS Basic.sf3",
+    "gpu_enabled": true,
+    "default_mode": "Lead Sheet (Standard)",
+    "separate_vocals_default": true,
+    "generate_pdf_default": false,
+    "compress_output": true,
+    "compression_format": "mp3",
+    "compression_quality": "high",
+    "auto_bundle": true,
+    "notation_software": "D:/Program Files/MuseScore 4/bin/MuseScore4.exe",
+    "notation_name": "MuseScore"
+}

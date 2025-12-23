@@ -2,6 +2,30 @@
 
 All notable changes to Sheet Sage will be documented in this file.
 
+## [v0.5.0] - 2025-12-23
+
+### 🎹 Live MIDI & Interactive Editing
+- **Live MIDI Playback** - Real-time note playback directly from the editor
+  - "Use Live MIDI" toggle in Audio Mixer
+  - Instant audio feedback when clicking notes
+  - High-frequency scheduler loop for accurate timing
+- **Interactive Editing** - Hear changes instantly while dragging/resizing notes
+- **View Toggle** - Dedicated button to switch between Piano Piano Roll and Drum Editor
+- **Persistent Metadata** - Always-visible display for BPM, Key, and Time Signature
+
+### 🐛 Fixed
+- **Startup Crash** - Fixed `AttributeError` in AudioMixerPanel initialization order
+- **FluidSynth Driver Error** - Added robust driver search (WASAPI/DSound fallback) for Windows
+- **Editor Signals** - Fixed missing signals for note previews and data updates
+- **Drum Synthesis** - Fixed crash when synthesizing empty drum tracks
+
+### ⚡ Improvements
+- **Project Loading** - Unified file loader accepts both audio and `.sage` projects
+- **Auto-Cleanup** - Aggressive temporary file deletion on exit
+- **Vocal Separation** - Enabled Demucs separation for Basic Pitch mode
+
+---
+
 ## [v0.4.0] - 2025-12-22
 
 ### 🎨 Major UI Redesign - AnthemScore-Inspired Interface

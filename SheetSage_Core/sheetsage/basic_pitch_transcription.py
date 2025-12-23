@@ -94,7 +94,8 @@ def transcribe_basic_pitch(audio_path, output_midi_path,
         )
         lead_sheet_base, segment_beats, segment_beats_times = ss_result
     except Exception as e:
-        logging.error(f"Sheet Sage infrastructure failed: {e}")
+        import traceback
+        logging.error(f"Sheet Sage infrastructure failed:\n{traceback.format_exc()}")
         raise e
     ss_end = time.time()
     logging.info(f"Sheet Sage infrastructure completed in {ss_end - ss_start:.2f} seconds")
@@ -339,5 +340,32 @@ def transcribe_basic_pitch(audio_path, output_midi_path,
     if output_midi_path: output_files.append(str(output_midi_path))
     if raw_midi_path: output_files.append(str(raw_midi_path))
     
+    # Copy original audio to output directory (necessary for project bundling)
+    try:
+        import shutil
+        input_ext = os.path.splitext(audio_path)[1]
+        dest_audio = output_dir / f"original{input_ext}"
+        shutil.copy2(audio_path, dest_audio)
+        output_files.append(str(dest_audio))
+        logging.info(f"Copied original audio to {dest_audio}")
+    except Exception as e:
+        logging.warning(f"Failed to copy original audio: {e}")
+    
+    # Extract metadata for UI
+    metadata = {}
+    try:
+        if 'tempo_changes' in locals() and tempo_changes:
+            metadata['bpm'] = round(tempo_changes[0][1])
+        if 'key_changes' in locals() and key_changes:
+            metadata['key'] = key_changes[0][1]
+        if 'meter_changes' in locals() and meter_changes:
+            _, num, den = meter_changes[0]
+            metadata['meter'] = f"{num}/{den}"
+    except:
+        pass
+
     print("Basic Pitch transcription finished successfully.")
-    return output_files
+    return {
+        'files': output_files,
+        'metadata': metadata
+    }

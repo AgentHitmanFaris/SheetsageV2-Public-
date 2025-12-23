@@ -109,7 +109,8 @@ sheetsageV2/
 │   ├── scripts/             # Inference scripts
 │   ├── libs/                # Bundled tools (LilyPond, FluidSynth)
 │   └── cache/               # Model cache
-├── newUI/                   # Native Qt application
+├── sheetsage_gui/           # Native Qt application (Restructured)
+├── static/                  # Project assets (banner, etc.)
 │   ├── widgets/             # UI components
 │   ├── workers/             # Background processing
 │   └── resources/           # Styles, icons
@@ -138,11 +139,11 @@ sheetsageV2/
 - Check internet connection
 - Manual install: `pip install -r SheetSage_Core/requirements.txt`
 
-### Recent Fixes (v0.4.0)
-- ✅ Fixed Basic Pitch permission errors
-- ✅ Fixed Lunaverus import issues
-- ✅ Improved UI responsiveness
-- ✅ Removed redundant UI elements
+### Recent Fixes (v0.5.0)
+- ✅ **Live MIDI Playback** - Real-time feedback during editing
+- ✅ **Interactive Editing** - Hear notes as you move them
+- ✅ **Improved Stability** - Fixed audio driver and crash issues
+- ✅ **Data Persistence** - Always-on metadata and reliable saving
 
 ## 🗺️ Roadmap
 
@@ -150,7 +151,6 @@ sheetsageV2/
 - [ ] Real-time transcription (live input)
 - [ ] Batch processing queue
 - [ ] Custom model training UI
-- [ ] MIDI editing in piano roll
 - [ ] Audio effects (reverb, EQ)
 - [ ] Export to MusicXML
 - [ ] Cloud model hosting
@@ -177,6 +177,6 @@ MIT License - See [LICENSE](LICENSE) for details
 
 ---
 
-**Version**: 0.4.0  
-**Last Updated**: December 22, 2025  
+**Version**: 0.5.0  
+**Last Updated**: December 23, 2025  
 **Status**: Active Development
