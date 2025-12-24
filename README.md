@@ -38,8 +38,8 @@
 
 1. **Clone Repository**
    ```bash
-   git clone https://github.com/AgentHitmanFaris/sheetsageV2.git
-   cd sheetsageV2
+   git clone https://github.com/AgentHitmanFaris/NC-AtoScore.git
+   cd NC-AtoScore
    ```
 
 2. **Run Setup**
@@ -172,8 +172,8 @@ MIT License - See [LICENSE](LICENSE) for details
 
 ## 📧 Contact
 
-- **GitHub**: [AgentHitmanFaris/sheetsageV2](https://github.com/AgentHitmanFaris/sheetsageV2)
-- **Issues**: [Report bugs here](https://github.com/AgentHitmanFaris/sheetsageV2/issues)
+- **GitHub**: [AgentHitmanFaris/NC-AtoScore](https://github.com/AgentHitmanFaris/NC-AtoScore)
+- **Issues**: [Report bugs here](https://github.com/AgentHitmanFaris/NC-AtoScore/issues)
 
 ---
 

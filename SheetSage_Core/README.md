@@ -46,8 +46,8 @@ Whether you are transcribing complex piano solos, separating vocals from pop son
 ### Quick Start
 1.  **Clone the Repository**:
     ```bash
-    git clone https://github.com/your-repo/sheetsage.git
-    cd sheetsage
+    git clone https://github.com/AgentHitmanFaris/NC-AtoScore.git
+    cd NC-AtoScore
     ```
 2.  **Run the App**:
     Double-click `run_local.ps1` (or `run_local.bat`).
