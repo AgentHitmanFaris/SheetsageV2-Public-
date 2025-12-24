@@ -20,7 +20,7 @@ Sheet Sage now offers three distinct transcription modes via tabs:
     *   **Features**: Hybrid workflow. Uses **Basic Pitch** for note detection (very sensitive) and **Sheet Sage** for structural analysis (chords, measures, time signature). Generates PDF/MIDI/Audio.
 
 
-3.  **SheetSage V3 (Lunaverus)**:
+3.  **atoscore V3 (Lunaverus)**:
     *   **Best For**: Premium Piano transcriptions requiring "Lunaverus-style" visual accuracy.
     *   **Features**: Uses a custom-trained CNN on the MAESTRO dataset. Optimized for GPU.
 
@@ -85,3 +85,4 @@ Use the sliders to create your own mix (e.g., mute the original to hear only the
 *   **"Segment end hint should be greater than start"**: Ensure your End Time is strictly larger than your Start Time. If you want to transcribe to the end, leave End Time empty.
 *   **Beat Tracking Issues**: If the beats seem off, try providing a **BPM Hint**.
 *   **Transcription Failed**: Check the console window for detailed error logs.
+

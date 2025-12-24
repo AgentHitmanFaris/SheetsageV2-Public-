@@ -1,6 +1,6 @@
 import os
 
-file_path = r"d:\Document\sheetsage\SheetSage_Core\omnizart_env\lib\site-packages\fluidsynth.py"
+file_path = r"d:\Document\atoscore\atoscore_Core\omnizart_env\lib\site-packages\fluidsynth.py"
 
 if not os.path.exists(file_path):
     print(f"File not found: {file_path}")
@@ -123,4 +123,5 @@ if patched:
     print("Repatched fluidsynth.py")
 else:
     print("Could not find patch target block.")
+
 

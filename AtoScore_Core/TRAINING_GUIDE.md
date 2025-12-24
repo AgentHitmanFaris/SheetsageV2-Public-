@@ -1,4 +1,4 @@
-# How to Train SheetSage V3 (Lunaverus) on Google Colab
+# How to Train atoscore V3 (Lunaverus) on Google Colab
 
 Since training a deep CNN requires significant GPU power, we recommend using Google Colab Pro.
 
@@ -18,7 +18,7 @@ Since training a deep CNN requires significant GPU power, we recommend using Goo
 
 3.  **Upload Files**
     *   Click the **Folder icon** on the left sidebar.
-    *   Upload `lunaverus_cnn.py` and `train_lunaverus.py` from your `sheetsage/modules/` folder.
+    *   Upload `lunaverus_cnn.py` and `train_lunaverus.py` from your `atoscore/modules/` folder.
 
 4.  **Install Dependencies**
     *   Run a cell with:
@@ -111,6 +111,7 @@ Since training a deep CNN requires significant GPU power, we recommend using Goo
     *   Find `lunaverus_weights.pth` in the Colab file browser (left sidebar).
     *   Right-click -> **Download**.
     *   **Move** the file to this exact folder on your PC:
-        `d:\Document\sheetsage\SheetSage_Core\sheetsage\modules\`
+        `d:\Document\atoscore\atoscore_Core\atoscore\modules\`
         
-    *   **Restart SheetSage** and enjoy your new AI model!
+    *   **Restart atoscore** and enjoy your new AI model!
+

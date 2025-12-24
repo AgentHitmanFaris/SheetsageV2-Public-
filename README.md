@@ -4,30 +4,37 @@
 
 **NC- AtoScore** is a professional AI-powered audio transcription tool that converts music into lead sheets, MIDI files, and sheet music. Built with state-of-the-art machine learning models and featuring a sleek, native desktop interface.
 
-## ✨ Key Features
+## Key Features
 
-### 🎵 Multiple Transcription Modes
+### Multiple Transcription Modes
+- **Basic Pitch (Standalone)** - Pure Spotify model, no harmony analysis
 - **Lead Sheet (Standard)** - Melody + Chords + Key + Tempo detection
 - **Piano (Polyphonic)** - Full piano transcription with pedal detection
-- **Basic Pitch (Polyphonic)** - Spotify's model with pitch bend support
 - **Drums (Omnizart)** - Drum kit transcription
-- **SheetSage V3 (Lunaverus)** - Custom CNN trained on MAESTRO dataset
+- **AtoScore V3 (Lunaverus)** - Custom CNN trained on MAESTRO dataset
 
-### 🎨 Professional Native UI
+### Media Support
+- **Audio Files** - MP3, WAV, FLAC, M4A, OGG
+- **Video Files** - MP4, MKV, AVI, MOV, WebM, WMV
+- **Automatic Audio Extraction** - FFmpeg-powered extraction from video files
+- **Project Files** - Save/load `.sage` project files
+
+### Professional Native UI
 - **AnthemScore-Inspired Design** - Clean, modern dark theme
 - **Dialog-Based Workflow** - Intuitive: Open → Configure → Transcribe
 - **Real-Time Piano Roll** - Visualize notes with spectrogram background
 - **Audio Mixer** - Synchronized playback with independent volume controls
 - **Live Progress Tracking** - See transcription status in real-time
+- **Interactive Editing** - Live MIDI preview and note manipulation
 
-### 🚀 Advanced Features
+### Advanced Features
 - **Vocal Separation** - Integrated Demucs for cleaner melody extraction
-- **GPU Acceleration** - CUDA-optimized for fast processing
+- **GPU Acceleration** - CUDA-optimized for fast processing (NVIDIA required)
 - **Sheet Music Export** - Professional PDF generation via LilyPond
 - **MIDI Synthesis** - High-quality audio preview with FluidSynth
-- **Batch Processing** - Queue multiple files (future feature)
+- **Project Management** - Save, load, and resume transcription projects
 
-## 📦 Installation
+## Installation
 
 ### Prerequisites
 - **Windows 10/11** (Primary platform)
@@ -103,13 +110,13 @@ The native UI will open automatically with a clean interface.
 
 ### Project Structure
 ```
-sheetsageV2/
-├── SheetSage_Core/          # Core transcription engine
-│   ├── sheetsage/           # Python package
+atoscoreV2/
+├── atoscore_Core/          # Core transcription engine
+│   ├── atoscore/           # Python package
 │   ├── scripts/             # Inference scripts
 │   ├── libs/                # Bundled tools (LilyPond, FluidSynth)
 │   └── cache/               # Model cache
-├── sheetsage_gui/           # Native Qt application (Restructured)
+├── atoscore_gui/           # Native Qt application (Restructured)
 ├── static/                  # Project assets (banner, etc.)
 │   ├── widgets/             # UI components
 │   ├── workers/             # Background processing
@@ -137,7 +144,7 @@ sheetsageV2/
 **Missing Dependencies**
 - Re-run `setup_local.bat`
 - Check internet connection
-- Manual install: `pip install -r SheetSage_Core/requirements.txt`
+- Manual install: `pip install -r atoscore_Core/requirements.txt`
 
 ### Recent Fixes (v0.5.0)
 - ✅ **Live MIDI Playback** - Real-time feedback during editing
@@ -163,20 +170,20 @@ MIT License - See [LICENSE](LICENSE) for details
 
 ## 🙏 Acknowledgments
 
-- **Spotify** - Basic Pitch model
-- **ByteDance** - Piano Transcription model
-- **Meta/Facebook** - Demucs source separation
-- **Music-and-Culture-Technology-Lab** - Omnizart
-- **LilyPond Project** - Music engraving
-- **AnthemScore** - UI design inspiration
+- **Sheet Sage V2** - Original harmony and structure inference models
+- **Spotify Basic Pitch** - Open-source polyphonic transcription
+- **ByteDance** - Piano transcription research
+- **Facebook/Meta Demucs** - Vocal separation technology
+- **Omnizart** - Multi-instrument transcription framework
+- **LilyPond** - Professional music notation engraving
+- **FluidSynth** - Real-time MIDI synthesis
 
-## 📧 Contact
+---
 
-- **GitHub**: [AgentHitmanFaris/NC-AtoScore](https://github.com/AgentHitmanFaris/NC-AtoScore)
-- **Issues**: [Report bugs here](https://github.com/AgentHitmanFaris/NC-AtoScore/issues)
+**Built with ❤️ by NC-Engineering**
 
 ---
 
 **Version**: 0.5.0  
 **Last Updated**: December 23, 2025  
-**Status**: Active Development
+

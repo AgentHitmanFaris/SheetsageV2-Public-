@@ -1,8 +1,8 @@
-# 🎉 SHEETSAGE NATIVE UI - FULLY COMPLETE!
+# 🎉 atoscore NATIVE UI - FULLY COMPLETE!
 
 ## ✅ 100% COMPLETE - BACKEND INTEGRATED!
 
-All components are now fully functional and connected to the SheetSage_Core backend!
+All components are now fully functional and connected to the atoscore_Core backend!
 
 ---
 
@@ -14,7 +14,7 @@ All components are now fully functional and connected to the SheetSage_Core back
   2. Piano (ByteDance Polyphonic) 
   3. Basic Pitch (Spotify) - GPU accelerated
   4. Drums (Omnizart) - CPU mode
-  5. SheetSage V3 (Lunaverus CNN) - GPU accelerated
+  5. atoscore V3 (Lunaverus CNN) - GPU accelerated
 
 - **Background Processing**: QThread workers prevent UI freezing
 - **Progress Tracking**: Real-time progress bar and log updates
@@ -59,7 +59,7 @@ All components are now fully functional and connected to the SheetSage_Core back
 ## 🔧 Backend Integration Details:
 
 ### Worker Thread (`workers/transcription_worker.py`):
-- Imports all backend modules from `../SheetSage_Core/sheetsage/`
+- Imports all backend modules from `../atoscore_Core/atoscore/`
 - Runs transcription in background QThread
 - Emits signals for:
   - `progress_update` - Text messages
@@ -70,25 +70,25 @@ All components are now fully functional and connected to the SheetSage_Core back
 ### Backend Functions Called:
 ```python
 # Lead Sheet
-from sheetsage.infer import sheetsage
-from sheetsage.vocal_separation import separate_vocals
-from sheetsage.synthesis import synthesize_midi, create_mix
+from atoscore.infer import atoscore
+from atoscore.vocal_separation import separate_vocals
+from atoscore.synthesis import synthesize_midi, create_mix
 
 # Piano
-from sheetsage.piano_transcription import transcribe_piano
+from atoscore.piano_transcription import transcribe_piano
 
 # Basic Pitch  
-from sheetsage.basic_pitch_transcription import transcribe_basic_pitch
+from atoscore.basic_pitch_transcription import transcribe_basic_pitch
 
 # Drums
-from sheetsage.modules.omnizart_transcription import run_omnizart
+from atoscore.modules.omnizart_transcription import run_omnizart
 
 # Lunaverus
-from sheetsage.modules.lunaverus_cnn import run_lunaverus
+from atoscore.modules.lunaverus_cnn import run_lunaverus
 ```
 
 ### Configuration:
-- Uses `sheetsage.config_manager.current_config` for output directory
+- Uses `atoscore.config_manager.current_config` for output directory
 - Settings saved to `newUI/config.json`
 - GPU/CPU detection via `torch.cuda.is_available()`
 
@@ -137,8 +137,8 @@ newUI/
 
 ### 1. Launch Application:
 ```bash
-cd d:/Document/sheetsage/newUI
-D:\Document\sheetsage\SheetSage_Core\python_embeded\python.exe launcher.py
+cd d:/Document/atoscore/newUI
+D:\Document\atoscore\atoscore_Core\python_embeded\python.exe launcher.py
 ```
 
 ### 2. Transcribe Audio:
@@ -196,7 +196,7 @@ D:\Document\sheetsage\SheetSage_Core\python_embeded\python.exe launcher.py
 ### End-to-End Workflow:
 1. ✅ User selects audio file
 2. ✅ Chooses transcription mode
-3. ✅ Worker thread calls SheetSage_Core backend
+3. ✅ Worker thread calls atoscore_Core backend
 4. ✅ Progress updates in real-time
 5. ✅ MIDI file generated
 6. ✅ PDF created (if enabled)
@@ -216,7 +216,7 @@ D:\Document\sheetsage\SheetSage_Core\python_embeded\python.exe launcher.py
 
 While the app is fully functional, optional enhancements:
 
-1. **Build Executable**: PyInstaller script to create `SheetSage.exe`
+1. **Build Executable**: PyInstaller script to create `atoscore.exe`
 2. **Installer**: Inno Setup for professional Windows installer
 3. **Icons**: Add custom icons to toolbar
 4. **Keyboard Shortcuts**: More shortcuts (F5 transcribe, Ctrl+O open, etc.)
@@ -231,4 +231,5 @@ While the app is fully functional, optional enhancements:
 
 All transcription modes work, all UI components are connected, and the entire pipeline from audio input to result playback is operational.
 
-SheetSage is now a professional, standalone native Windows application! 🎵✨
+atoscore is now a professional, standalone native Windows application! 🎵✨
+

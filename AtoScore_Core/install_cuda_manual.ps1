@@ -16,7 +16,7 @@ Write-Host ""
 Write-Host "3. Right-click cudart64_110.dll > Copy To..."
 Write-Host ""
 Write-Host "4. Navigate to and select this folder:"
-Write-Host "   D:\Document\sheetsage\SheetSage_Core\cuda_libs\"
+Write-Host "   D:\Document\atoscore\atoscore_Core\cuda_libs\"
 Write-Host ""
 Write-Host "5. Click OK to copy (overwrite the existing file)"
 Write-Host ""
@@ -24,7 +24,7 @@ Write-Host "=============================================="
 Write-Host "Verification:"
 Write-Host "=============================================="
 
-$cudaLibs = "D:\Document\sheetsage\SheetSage_Core\cuda_libs"
+$cudaLibs = "D:\Document\atoscore\atoscore_Core\cuda_libs"
 $targetDll = Join-Path $cudaLibs "cudart64_110.dll"
 
 if (Test-Path $targetDll) {
@@ -41,7 +41,7 @@ if (Test-Path $targetDll) {
         Write-Host "`n  STATUS: OLD CUDA 11.0 version (still needs update)"
     } elseif ($size -eq 464) {
         Write-Host "`n  STATUS: CORRECT! This is CUDA 11.2"  
-        Write-Host "`n  Next step: Restart SheetSage application"
+        Write-Host "`n  Next step: Restart atoscore application"
     } else {
         Write-Host "`n  STATUS: Unknown version (size: $size KB)"
     }
@@ -50,3 +50,4 @@ if (Test-Path $targetDll) {
 Write-Host "`n=============================================="
 Write-Host "Press Enter when done copying..."
 $null = Read-Host
+

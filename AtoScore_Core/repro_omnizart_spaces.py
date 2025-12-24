@@ -2,12 +2,12 @@ import os
 import shutil
 import sys
 sys.path.append(os.getcwd())
-from sheetsage.modules.omnizart_transcription import run_omnizart
+from atoscore.modules.omnizart_transcription import run_omnizart
 
 # Use the known good input file
-src = r"d:\Document\sheetsage\SheetSage_Core\temp\safe_inputs\input_570bf76e.mp3"
+src = r"d:\Document\atoscore\atoscore_Core\temp\safe_inputs\input_570bf76e.mp3"
 # Create a destination with spaces
-dest_dir = r"d:\Document\sheetsage\SheetSage_Core\temp\space_test"
+dest_dir = r"d:\Document\atoscore\atoscore_Core\temp\space_test"
 if not os.path.exists(dest_dir):
     os.makedirs(dest_dir)
 
@@ -34,3 +34,4 @@ if result:
         print("SUCCESS: Output has content.")
 else:
     print("Failure: No output returned.")
+

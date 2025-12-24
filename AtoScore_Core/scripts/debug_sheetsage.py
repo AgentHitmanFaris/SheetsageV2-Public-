@@ -17,12 +17,12 @@ if hasattr(os, 'add_dll_directory'):
     os.add_dll_directory = _patched_add_dll_directory
 
 # Update cache dir
-local_cache = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".sheetsage"))
-os.environ["SHEETSAGE_CACHE_DIR"] = local_cache
+local_cache = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".atoscore"))
+os.environ["atoscore_CACHE_DIR"] = local_cache
 
 logging.basicConfig(level=logging.INFO)
 
-from sheetsage.infer import sheetsage
+from atoscore.infer import atoscore
 
 audio_path = r"D:\Download\Music\BABYMONSTER - PSYCHO MV.mp3"
 
@@ -30,7 +30,7 @@ print("Running Sheet Sage Infrastructure Test...")
 start_time = time.time()
 try:
     # Use same params as in code (detect_harmony=True, detect_melody=False)
-    ss_result = sheetsage(
+    ss_result = atoscore(
         audio_path_bytes_or_url=audio_path,
         detect_melody=False,
         detect_harmony=True,
@@ -43,4 +43,5 @@ except Exception as e:
     print(f"Sheet Sage failed: {e}")
     import traceback
     traceback.print_exc()
+
 

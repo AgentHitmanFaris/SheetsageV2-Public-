@@ -90,7 +90,7 @@ def install_cuda_runtime():
         
         print("\n" + "="*60)
         print("Next Steps:")
-        print("1. Restart the SheetSage application")
+        print("1. Restart the atoscore application")
         print("2. Omnizart will automatically use GPU acceleration")
         print("="*60)
         
@@ -124,3 +124,4 @@ if __name__ == "__main__":
         print(f"\nFatal error: {e}")
     
     input("\nPress Enter to close...")
+

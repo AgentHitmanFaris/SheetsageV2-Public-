@@ -81,7 +81,7 @@ class BatchProcessingDialog(QDialog):
             "Piano (ByteDance)",
             "Basic Pitch (Spotify)",
             "Drums (Omnizart)",
-            "SheetSage V3 (Lunaverus)"
+            "atoscore V3 (Lunaverus)"
         ])
         mode_row.addWidget(self.mode_combo, 1)
         settings_layout.addLayout(mode_row)
@@ -356,3 +356,4 @@ class BatchProcessingDialog(QDialog):
         self.pause_btn.setText("⏸️ Pause")
         self.is_paused = False
         self.worker = None
+

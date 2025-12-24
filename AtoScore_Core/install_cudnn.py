@@ -54,7 +54,7 @@ def install_cudnn():
     print(f"Successfully copied {copied}/{len(dll_files)} files!")
     print("\nNext steps:")
     print("1. Verify CUDA 11.2 is installed in: C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.2")
-    print("2. Restart the SheetSage application")
+    print("2. Restart the atoscore application")
     print("3. Omnizart will now use GPU acceleration!")
 
 if __name__ == "__main__":
@@ -66,3 +66,4 @@ if __name__ == "__main__":
         print(f"\nError: {e}")
     
     input("\nPress Enter to close...")
+

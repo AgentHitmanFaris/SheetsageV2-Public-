@@ -14,7 +14,7 @@ if (-not (Test-Path $BinDir)) {
 $Env:Path = "$BinDir;$Env:Path"
 
 Write-Host "=========================================="
-Write-Host "   Sheet Sage - One-Click Local Setup"
+Write-Host "   NC- AtoScore - One-Click Local Setup"
 Write-Host "=========================================="
 Write-Host ""
 Write-Host "Check: Local 'bin' folder added to PATH."
@@ -290,12 +290,12 @@ if (-not (Test-Path "$(Join-Path $BinDir 'melisma-key.exe')")) {
 # --- 5. Downloading Models ---
 Write-Host "--- 5. Downloading Models ---"
 New-Item -ItemType Directory -Path $CacheDir -Force | Out-Null
-$Env:SHEETSAGE_CACHE_DIR = $CacheDir
+$Env:ATOSCORE_CACHE_DIR = $CacheDir
 
-if (Test-Path "$CacheDir/sheetsage") {
+if (Test-Path "$CacheDir/atoscore") {
     Write-Host "Cache directory not empty, assuming models present."
 } else {
-    & $PythonExe -m sheetsage.assets SHEETSAGE_V02_HANDCRAFTED
+    & $PythonExe -m atoscore.assets ATOSCORE_V02_HANDCRAFTED
 }
 
 # --- 6. Post-Install Verification ---

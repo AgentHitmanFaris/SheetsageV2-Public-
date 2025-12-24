@@ -48,8 +48,8 @@ def run_omnizart(audio_path, output_dir_str, mode="drum", callback=None):
             else:
                 logging.info(f"Found omnizart_env at {env_path}")
 
-        # Executable path (Windows)
-        python_exe = env_path / "Scripts" / "python.exe"
+        # Executable path (Windows) - use embedded Python which has all DLLs
+        python_exe = env_path / "python_embeded" / "python.exe"
         
         if not python_exe.exists():
             logging.error(f"Python executable not found at {python_exe}")

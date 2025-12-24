@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sheet Sage: Robust Polyphonic Audio-to-Score Transcription</title>
+    <title>NC- AtoScore: Robust Polyphonic Audio-to-Score Transcription</title>
     <script type="text/javascript" id="MathJax-script" async
         src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
         </script>
@@ -223,18 +223,18 @@
     <div class="paper-container">
 
         <div class="header-section">
-            <h1>SHEET SAGE: ROBUST POLYPHONIC AUDIO-TO-SCORE TRANSCRIPTION</h1>
+            <h1>NC- ATOSCORE: ROBUST POLYPHONIC AUDIO-TO-SCORE TRANSCRIPTION</h1>
 
             <div class="author-block">
                 <div class="author-names">
-                    Muhammad Faris Hakim Bin Hussin<sup>*</sup> and AG <sup>†</sup>
+                    NC-Engineering<sup>*</sup> and AG <sup>†</sup>
                 </div>
                 <div class="affiliations">
-                    <sup>*</sup>Department of Intelligence and Information, Sheet Sage Project<br>
+                    <sup>*</sup>Department of Intelligence and Information, NC-Engineering Project<br>
                     <sup>†</sup>Research Division, Google DeepMind
                 </div>
                 <div class="email">
-                    farishakim38@gmail.com
+                    engineering@nc-example.com
                 </div>
             </div>
         </div>
@@ -248,7 +248,7 @@
                     signals—remains a fundamental challenge in Music Information Retrieval. While Transformer-based
                     end-to-end models like Pop2Piano have shown promise, they often lack the modularity required for
                     real-world production environments where vocal isolation, multi-instrument separation, and
-                    high-fidelity engraving must coexist. We present <strong>Sheet Sage V3</strong>, a unified framework
+                    high-fidelity engraving must coexist. We present <strong>NC- AtoScore</strong>, a unified framework
                     that orchestrates state-of-the-art neural components: Hybrid Transformer Demucs for source
                     separation, Basic Pitch for instrument-agnostic tracking, Omnizart for percussion analysis, and the
                     "Lunaverus" High-Resolution Regressive model for piano transcription. By mathematically formalizing
@@ -287,7 +287,7 @@
                 engraving styles. Furthermore, they frequently require significant cloud infrastructure.
             </p>
             <p>
-                <strong>Sheet Sage</strong> addresses these limitations by decoupling the problem into three distinct
+                <strong>NC- AtoScore</strong> addresses these limitations by decoupling the problem into three distinct
                 stages: Signal Separation, Feature Extraction, and Symbolic Inference. This modular approach allows for
                 "intervention" at each stage—users can audit the separated vocals before transcription begins, ensuring
                 higher trust and accuracy.
@@ -377,7 +377,7 @@
             <div class="figure-container">
 
                 <div class="caption">
-                    <b>Fig. 1.</b> The Sheet Sage Pipeline. Audio is separated into stems (Vocals, Drums, Bass, Other),
+                    <b>Fig. 1.</b> The NC- AtoScore Pipeline. Audio is separated into stems (Vocals, Drums, Bass, Other),
                     processed via separate CQT/Mel-Spec streams, and transcribed into synchronized MIDI.
                 </div>
             </div>
@@ -436,9 +436,9 @@
                 spurious notes shorter than 50ms, which are physically impossible on acoustic pianos.
             </p>
 
-            <h3>3.4. SheetSage V3 & Omnizart Architecture</h3>
+            <h3>3.4. NC- AtoScore & Omnizart Architecture</h3>
             <p>
-                To address the "No-Free-Lunch" theorem in music transcription, Sheet Sage V3 introduces a routed
+                To address the "No-Free-Lunch" theorem in music transcription, NC- AtoScore introduces a routed
                 architecture. Instead of a single model attempting to transcribe everything, we route the signal to
                 specialized networks:
             </p>
@@ -451,7 +451,7 @@
                 </li>
             </ul>
             <p>
-                This ensemble approach allows Sheet Sage to outperform monolithic transformers by leveraging the
+                This ensemble approach allows NC- AtoScore to outperform monolithic transformers by leveraging the
                 inductive bias best suited for each instrument class.
             </p>
 

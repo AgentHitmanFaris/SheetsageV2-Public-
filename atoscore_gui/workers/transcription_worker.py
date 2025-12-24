@@ -6,8 +6,9 @@ QThread worker for running transcription in background without blocking UI
 from PySide6.QtCore import QThread, Signal
 import sys
 import os
+import pathlib
 
-# Add SheetSage_Core to path
+# Add atoscore_Core to path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'AtoScore_Core')))
 
 
@@ -38,8 +39,29 @@ class TranscriptionWorker(QThread):
             self.progress_update.emit(f"Starting {mode} transcription...")
             self.progress_percent.emit(5)
             
+            # Check if input is a video file and extract audio
+            video_extensions = {'.mp4', '.mkv', '.avi', '.mov', '.webm', '.wmv', '.flv', '.m4v'}
+            file_ext = pathlib.Path(audio_file).suffix.lower()
+            
+            if file_ext in video_extensions:
+                self.progress_update.emit("Extracting audio from video...")
+                self.progress_percent.emit(10)
+                
+                try:
+                    from atoscore.video_utils import extract_audio_from_video
+                    extracted_audio = extract_audio_from_video(audio_file)
+                    # Update config to use extracted audio
+                    self.config['audio_file'] = extracted_audio
+                    self.config['original_video'] = audio_file
+                    audio_file = extracted_audio
+                    self.progress_percent.emit(20)
+                except Exception as e:
+                    raise Exception(f"Failed to extract audio from video: {e}")
+            
             # Route to appropriate transcription function
-            if mode == "Lead Sheet (Standard)":
+            if mode == "Basic Pitch (Standalone - No Harmony)":
+                result = self._transcribe_basic_pitch_standalone()
+            elif mode == "Lead Sheet (Standard)":
                 result = self._transcribe_lead_sheet()
             elif mode == "Piano (Polyphonic)":
                 result = self._transcribe_piano()
@@ -47,7 +69,7 @@ class TranscriptionWorker(QThread):
                 result = self._transcribe_basic_pitch()
             elif mode == "Drums (Omnizart)":
                 result = self._transcribe_drums()
-            elif mode == "SheetSage V3 (Lunaverus)":
+            elif mode == "atoscore V3 (Lunaverus)":
                 result = self._transcribe_lunaverus()
             else:
                 raise ValueError(f"Unknown transcription mode: {mode}")
@@ -73,14 +95,16 @@ class TranscriptionWorker(QThread):
             'piano': 'Piano (Polyphonic)',
             'basic_pitch': 'Basic Pitch (Polyphonic)',
             'drums': 'Drums (Omnizart)',
-            'lunaverus': 'SheetSage V3 (Lunaverus)'
+            'lunaverus': 'atoscore V3 (Lunaverus)'
         }
         
         full_mode = mode_map.get(mode, mode)
         self.config['mode'] = full_mode
         
         # Route to appropriate transcription function
-        if 'Lead Sheet' in full_mode:
+        if 'Standalone' in full_mode:
+            return self._transcribe_basic_pitch_standalone()
+        elif 'Lead Sheet' in full_mode:
             return self._transcribe_lead_sheet()
         elif 'Piano' in full_mode:
             return self._transcribe_piano()
@@ -95,7 +119,7 @@ class TranscriptionWorker(QThread):
     
     def _transcribe_lead_sheet(self):
         """Transcribe using Lead Sheet (Standard) mode"""
-        from atoscore.infer import sheetsage
+        from atoscore.infer import atoscore
         from atoscore.audio_utils import synthesize_midi, create_mix
         from atoscore.utils import engrave
         from atoscore.config_manager import current_config
@@ -150,16 +174,16 @@ class TranscriptionWorker(QThread):
         self.progress_update.emit("Transcribing to sheet music...")
         self.progress_percent.emit(50)
         
-        # Call sheetsage infer (returns objects, does NOT save files)
-        # Signature: sheetsage(audio_path_bytes_or_url, ...)
+        # Call atoscore infer (returns objects, does NOT save files)
+        # Signature: atoscore(audio_path_bytes_or_url, ...)
         target_audio = vocals_path if vocals_path else audio_file
         
-        lead_sheet, segment_beats, beats_times = sheetsage(
+        lead_sheet, segment_beats, beats_times = atoscore(
             target_audio,
             segment_start_hint=self.config.get('start_time'),
             segment_end_hint=self.config.get('end_time'),
             beats_per_minute_hint=self.config.get('bpm_hint'),
-            # Note: beats_per_measure is handled via hint in sheetsage
+            # Note: beats_per_measure is handled via hint in atoscore
             beats_per_measure_hint=self.config.get('beats_per_measure'), 
         )
         
@@ -194,9 +218,9 @@ class TranscriptionWorker(QThread):
             # as_midi calculates beats from tertiaries, then calls this. 
             # Since our lead_sheet starts at 0, and beat_to_time starts at 0 (relative to segment?),
             # We might need to handle offset.
-            # But the lead_sheet object returned from sheetsage is typically trimmed/re-zeroed.
+            # But the lead_sheet object returned from atoscore is typically trimmed/re-zeroed.
             # Let's trust as_midi default for now if in doubt, or use simple beat_to_time.
-            # Actually, sheetsage() returns (lead_sheet, segment_beats, beats_times).
+            # Actually, atoscore() returns (lead_sheet, segment_beats, beats_times).
             # The lead sheet structure is aligned to 0.
             # The beats_times are absolute times in the audio.
             # We need to map LeadSheet time 0 -> Audio Time X.
@@ -437,7 +461,7 @@ class TranscriptionWorker(QThread):
         }
     
     def _transcribe_lunaverus(self):
-        """Transcribe using SheetSage V3 (Lunaverus) mode"""
+        """Transcribe using atoscore V3 (Lunaverus) mode"""
         from atoscore.modules.lunaverus_cnn import run_lunaverus
         from atoscore.audio_utils import synthesize_midi, create_mix
         from atoscore.config_manager import current_config
@@ -455,7 +479,7 @@ class TranscriptionWorker(QThread):
         os.makedirs(output_dir, exist_ok=True)
         output_dir_path = pathlib.Path(output_dir)
         
-        self.progress_update.emit("Transcribing with SheetSage V3 CNN...")
+        self.progress_update.emit("Transcribing with atoscore V3 CNN...")
         self.progress_percent.emit(40)
         
         weights_path = os.path.join(os.path.dirname(__file__), '..', '..', 'AtoScore_Core', 
@@ -478,10 +502,70 @@ class TranscriptionWorker(QThread):
         mixed_path, original_segment = create_mix(audio_file, synth_path, output_dir_path)
         
         return {
-            'mode': 'SheetSage V3',
+            'mode': 'atoscore V3',
             'midi_path': final_midi_path,
             'synth_path': synth_path,
             'mixed_path': mixed_path,
             'original_path': original_segment,
             'output_dir': output_dir
         }
+
+    def _transcribe_basic_pitch_standalone(self):
+        """Transcribe using pure Basic Pitch (no SheetSage infrastructure)"""
+        import tempfile
+        import shutil
+        import pathlib
+        from basic_pitch.inference import predict_and_save, ICASSP_2022_MODEL_PATH
+        from atoscore.audio_utils import synthesize_midi, create_mix
+        from atoscore.config_manager import load_config
+        
+        current_config = load_config()
+        audio_file = self.config.get('audio_file', '')
+        
+        # Create output directory
+        output_dir = tempfile.mkdtemp(dir=os.environ.get("ATOSCORE_TEMP", None))
+        output_dir_path = pathlib.Path(output_dir)
+        
+        self.progress_update.emit("Transcribing with Basic Pitch (Standalone)...")
+        self.progress_percent.emit(30)
+        
+        # Use Basic Pitch directly without SheetSage infrastructure
+        with tempfile.TemporaryDirectory(dir=os.environ.get("ATOSCORE_TEMP", None)) as temp_bp_dir:
+            predict_and_save(
+                [audio_file],
+                temp_bp_dir,
+                True,  # save_midi
+                False,  # sonify_midi
+                False,  # save_model_outputs
+                False,  # save_notes
+                ICASSP_2022_MODEL_PATH
+            )
+            
+            # Find the generated MIDI file
+            bp_midi_files = list(pathlib.Path(temp_bp_dir).glob("*.mid"))
+            if not bp_midi_files:
+                raise FileNotFoundError("Basic Pitch did not generate MIDI output")
+            
+            # Copy to output directory
+            target_midi_path = output_dir_path / "basic_pitch_standalone.midi"
+            shutil.copy2(str(bp_midi_files[0]), str(target_midi_path))
+        
+        midi_path = str(target_midi_path)
+        
+        self.progress_update.emit("Synthesizing audio...")
+        self.progress_percent.emit(70)
+        
+        soundfont = current_config.get('soundfont_path', '')
+        synth_path = synthesize_midi(midi_path, soundfont, output_dir_path)
+        mixed_path, original_segment = create_mix(audio_file, synth_path, output_dir_path)
+        
+        return {
+            'mode': 'Basic Pitch (Standalone)',
+            'midi_path': midi_path,
+            'synth_path': synth_path,
+            'mixed_path': mixed_path,
+            'original_path': original_segment,
+            'output_dir': output_dir,
+            'metadata': {}
+        }
+

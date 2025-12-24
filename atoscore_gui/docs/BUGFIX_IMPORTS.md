@@ -1,7 +1,7 @@
 # Backend Integration - Import Fix Applied
 
 ## Issue Fixed:
-The worker was trying to import from `sheetsage.synthesis` which doesn't exist.
+The worker was trying to import from `atoscore.synthesis` which doesn't exist.
 
 ## Solution Applied:
 Updated all imports in `workers/transcription_worker.py` to use the correct module paths:
@@ -9,10 +9,10 @@ Updated all imports in `workers/transcription_worker.py` to use the correct modu
 ### Corrected Imports:
 ```python
 # OLD (wrong):
-from sheetsage.synthesis import synthesize_midi, create_mix
+from atoscore.synthesis import synthesize_midi, create_mix
 
 # NEW (correct):
-from sheetsage.gradio_app import synthesize_midi, create_mix
+from atoscore.gradio_app import synthesize_midi, create_mix
 ```
 
 ### Demucs Integration:
@@ -42,4 +42,5 @@ Test with:
 - Basic Pitch (Polyphonic)
 - Any other mode
 
-All backend functions are now correctly imported from `sheetsage.gradio_app`.
+All backend functions are now correctly imported from `atoscore.gradio_app`.
+

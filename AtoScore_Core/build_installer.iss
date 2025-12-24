@@ -1,11 +1,11 @@
-; SheetSage V3 - Inno Setup Script
-; This creates a professional Windows installer for SheetSage
+; atoscore V3 - Inno Setup Script
+; This creates a professional Windows installer for atoscore
 
-#define MyAppName "Sheet Sage V3"
+#define MyAppName "NC- AtoScore"
 #define MyAppVersion "3.0.0"
-#define MyAppPublisher "Muhammad Faris Hakim"
-#define MyAppURL "https://github.com/your-repo/sheetsage"
-#define MyAppExeName "SheetSage.bat"
+#define MyAppPublisher "NC-Engineering"
+#define MyAppURL "https://github.com/your-repo/atoscore"
+#define MyAppExeName "atoscore.bat"
 
 [Setup]
 ; NOTE: The value of AppId uniquely identifies this application.
@@ -23,7 +23,7 @@ AllowNoIcons=yes
 LicenseFile=LICENSE
 InfoBeforeFile=README.md
 OutputDir=installer_output
-OutputBaseFilename=SheetSage_V3_Setup
+OutputBaseFilename=atoscore_V3_Setup
 SetupIconFile=assets\icon.ico
 Compression=lzma2/ultra64
 SolidCompression=yes
@@ -43,16 +43,16 @@ Name: "quicklaunchicon"; Description: "{cm:CreateQuickLaunchIcon}"; GroupDescrip
 
 [Files]
 ; Main application files
-Source: "dist\SheetSage\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "dist\atoscore\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 
 [Icons]
-Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\SheetSage.exe"
+Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\atoscore.exe"
 Name: "{group}\Documentation"; Filename: "{app}\START_HERE.txt"
 Name: "{group}\User Guide"; Filename: "{app}\HowToUse.md"
 Name: "{group}\{cm:UninstallProgram,{#MyAppName}}"; Filename: "{uninstallexe}"
-Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon; IconFilename: "{app}\SheetSage.exe"
-Name: "{userappdata}\Microsoft\Internet Explorer\Quick Launch\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: quicklaunchicon; IconFilename: "{app}\SheetSage.exe"
+Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon; IconFilename: "{app}\atoscore.exe"
+Name: "{userappdata}\Microsoft\Internet Explorer\Quick Launch\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: quicklaunchicon; IconFilename: "{app}\atoscore.exe"
 
 [Run]
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: shellexec postinstall skipifsilent nowait
@@ -89,7 +89,7 @@ begin
   GPUCheckPage := CreateOutputMsgMemoPage(wpWelcome,
     'GPU Detection', 
     'Checking for NVIDIA GPU support',
-    'Sheet Sage V3 can use GPU acceleration for faster transcription. ' +
+    'NC- AtoScore can use GPU acceleration for faster transcription. ' +
     'Please wait while we check your system...',
     '');
 end;
@@ -145,7 +145,7 @@ begin
 end;
 
 [Messages]
-WelcomeLabel2=This will install [name/ver] on your computer.%n%nSheet Sage V3 is an AI-powered music transcription suite that converts audio to sheet music using state-of-the-art machine learning models.%n%nIt is recommended that you close all other applications before continuing.
+WelcomeLabel2=This will install [name/ver] on your computer.%n%nNC- AtoScore is an AI-powered music transcription suite that converts audio to sheet music using state-of-the-art machine learning models.%n%nIt is recommended that you close all other applications before continuing.
 FinishedHeadingLabel=Completing the [name] Setup Wizard
 FinishedLabelNoIcons=Setup has finished installing [name] on your computer.%n%nRecommended: Read the START_HERE.txt file for important usage information.
 
@@ -154,3 +154,4 @@ Type: filesandordirs; Name: "{app}\temp"
 Type: filesandordirs; Name: "{app}\temp_playback"
 Type: filesandordirs; Name: "{app}\cache"
 Type: filesandordirs; Name: "{app}\output"
+

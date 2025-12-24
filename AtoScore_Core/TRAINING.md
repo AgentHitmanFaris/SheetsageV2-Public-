@@ -4,14 +4,14 @@ This document explains the model architecture, data pipeline, and training proce
 
 ## 1. Model Architecture
 
-Sheet Sage uses a Transformer-based architecture for transcription tasks (Melody and Harmony). The core model class is `EncOnlyTransducer` defined in `sheetsage/modules/modules.py`.
+Sheet Sage uses a Transformer-based architecture for transcription tasks (Melody and Harmony). The core model class is `EncOnlyTransducer` defined in `atoscore/modules/modules.py`.
 
 ### Key Components:
 
 *   **Encoder**: A standard Transformer Encoder (`TransformerEncoder`) is used to process the input features.
     *   **Input**: Beat-aligned audio features (Log-Mel Spectrograms).
     *   **Architecture**: Multi-head self-attention layers with feedforward networks.
-    *   **Configuration**: Typically 6 layers, 8 heads, 512 model dimension (as seen in `sheetsage/infer.py` and `train.py`).
+    *   **Configuration**: Typically 6 layers, 8 heads, 512 model dimension (as seen in `atoscore/infer.py` and `train.py`).
 
 *   **Projection**:
     *   **Input Projection**: Input features (dimension 229 for Handcrafted features) are projected to the model dimension (512).
@@ -21,7 +21,7 @@ Sheet Sage uses a Transformer-based architecture for transcription tasks (Melody
 
 ## 2. Data Pipeline
 
-The data handling logic is located in `sheetsage/data.py`.
+The data handling logic is located in `atoscore/data.py`.
 
 ### Data Source: Hooktheory
 The primary dataset used is the **Hooktheory** dataset, which provides high-quality user-contributed lead sheets.
@@ -32,7 +32,7 @@ The primary dataset used is the **Hooktheory** dataset, which provides high-qual
     *   `beat_times`: Timestamps of beats, essential for aligning audio features to the musical grid.
 
 ### Feature Extraction
-Audio is processed into Log-Mel Spectrograms using `sheetsage/representations/handcrafted.py`.
+Audio is processed into Log-Mel Spectrograms using `atoscore/representations/handcrafted.py`.
 *   **Sample Rate**: 16kHz
 *   **Mel Bands**: 229
 *   **Hop Size**: 512 samples
@@ -74,6 +74,7 @@ python train.py --dummy --epochs 5 --batch_size 4
 
 ### Future Work: Training on Real Data
 To train on the full Hooktheory dataset:
-1.  Implement a specific `Dataset` class in `train.py` that utilizes `sheetsage.data.iter_hooktheory`.
-2.  Ensure you have access to the Hooktheory dataset assets (managed via `sheetsage/assets.py`).
+1.  Implement a specific `Dataset` class in `train.py` that utilizes `atoscore.data.iter_hooktheory`.
+2.  Ensure you have access to the Hooktheory dataset assets (managed via `atoscore/assets.py`).
 3.  Update `train.py` to load this dataset when `--dummy` is not specified.
+

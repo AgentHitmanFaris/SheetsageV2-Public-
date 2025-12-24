@@ -2,6 +2,52 @@
 
 All notable changes to NC- AtoScore will be documented in this file.
 
+## [v3.0.0] - 2024-12-24
+
+### Rebranding & Ownership Transfer
+- **Complete Rebranding** - Project renamed from "SheetSage" to **NC- AtoScore**
+- **New Developer** - Transferred ownership from Muhammad Faris Hakim to **NC-Engineering**
+- **Repository Migration** - Moved to `https://github.com/AgentHitmanFaris/NC-AtoScore`
+- **Updated Branding** - All UI elements, documentation, and build artifacts reflect new identity
+- **Environment Variables** - Renamed from `SHEETSAGE_*` to `ATOSCORE_*` for consistency
+- **Cache Migration** - Automatic migration from `.sheetsage` to `.atoscore` directory
+
+### Video File Support
+- **Video Transcription** - Extract audio from video files automatically
+  - Supported formats: MP4, MKV, AVI, MOV, WebM, WMV, FLV, M4V
+  - Uses FFmpeg for high-quality audio extraction
+  - Transparent workflow: Open video → Transcribe as normal
+- **Automatic Detection** - App identifies video files and extracts audio in background
+- **Temp Management** - Extracted audio files are cached and cleaned up automatically
+
+### Transcription Improvements
+- **Basic Pitch (Standalone)** - New mode for pure Basic Pitch transcription
+  - No beat tracking or harmony analysis
+  - Faster processing and simpler output
+  - Ideal for quick MIDI conversions
+- **Checksum Bypass** - Disabled model file validation for seamless cache migration
+- **Beat Tracking Fix** - Resolved `AssertionError` in downbeat detection
+  - Normalized downbeat indices to prevent out-of-range errors
+  - Added meter safety checks (defaults to 4/4 if unsupported)
+
+### Bug Fixes
+- **Asset Download** - Fixed `yt-dlp` path errors after folder rename
+  - Updated to use `sys.executable -m yt_dlp` instead of broken `.exe` launcher
+  - Ensures future downloads work across directory structure changes
+- **Omnizart Drums** - Fixed `ModuleNotFoundError: No module named '_ctypes'`
+  - Updated to use embedded Python with all required DLLs
+  - Drum transcription now fully functional
+- **GUI Imports** - Corrected `from widgets` to `from ui.widgets` throughout UI code
+- **Application Icon** - Restored window icon display
+  - Icon now appears in title bar, taskbar, and Alt+Tab switcher
+
+### Documentation
+- **Professional Updates** - Comprehensive CHANGELOG and README improvements
+- **Updated Screenshots** - Reflect NC- AtoScore branding
+- **Migration Guide** - Clear documentation for users upgrading from SheetSage
+
+---
+
 ## [v0.5.0] - 2025-12-23
 
 ### 🎹 Live MIDI & Interactive Editing

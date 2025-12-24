@@ -1,4 +1,4 @@
-# SheetSage Native UI Requirements
+# atoscore Native UI Requirements
 # PySide6-based Windows desktop application
 
 # Core GUI framework
@@ -12,5 +12,6 @@ PySide6-Addons>=6.6.0
 pytest>=7.4.0
 pytest-qt>=4.2.0
 
-# Note: Backend dependencies are in ../SheetSage_Core/requirements.txt
+# Note: Backend dependencies are in ../atoscore_Core/requirements.txt
 # This file only contains native UI-specific dependencies
+

@@ -22,17 +22,17 @@ if hasattr(os, 'add_dll_directory'):
     os.add_dll_directory = _patched_add_dll_directory
 
 # Point to local cache directory so it finds the assets the user downloaded
-local_cache = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".sheetsage"))
-os.environ["SHEETSAGE_CACHE_DIR"] = local_cache
+local_cache = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".atoscore"))
+os.environ["atoscore_CACHE_DIR"] = local_cache
 print(f"Set cache dir to: {local_cache}")
 
 import onnxruntime as ort
 print("ONNX Runtime Providers:", ort.get_available_providers())
 
-from sheetsage.basic_pitch_transcription import transcribe_basic_pitch
+from atoscore.basic_pitch_transcription import transcribe_basic_pitch
 
 audio_path = r"D:\Download\Music\BABYMONSTER - PSYCHO MV.mp3"
-output_midi_path = r"D:\Document\sheetsage\output\debug_test.mid"
+output_midi_path = r"D:\Document\atoscore\output\debug_test.mid"
 
 # Create output dir if not exists
 os.makedirs(os.path.dirname(output_midi_path), exist_ok=True)
@@ -91,3 +91,4 @@ except Exception as e:
 
 end_time = time.time()
 print(f"Total time: {end_time - start_time:.2f} seconds")
+

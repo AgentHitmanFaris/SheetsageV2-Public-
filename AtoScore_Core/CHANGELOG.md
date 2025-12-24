@@ -20,12 +20,12 @@ All notable changes to this project will be documented in this file.
 
 ## [v3.0.0] - 2025-12-20
 
-### Major Release: SheetSage V3 "Lunaverus" & Unified Architecture
+### Major Release: atoscore V3 "Lunaverus" & Unified Architecture
 
 This major release transforms Sheet Sage into a unified MIR (Music Information Retrieval) workstation, integrating the new **Lunaverus CNN**, restoring **Omnizart** with GPU acceleration, and polishing the entire experience.
 
 ### New Features
-- **SheetSage V3 (Lunaverus CNN)**:
+- **atoscore V3 (Lunaverus CNN)**:
     - Integrated a custom-trained CNN model optimized for visual-first piano transcription.
     - Achieves high-resolution onboarding/offset detection.
     - Fully GPU-accelerated via Portable CUDA.
@@ -43,7 +43,7 @@ This major release transforms Sheet Sage into a unified MIR (Music Information R
 
 ### Improved
 - **Real-Time Feedback**:
-    - All transcription modes (Omnizart, Basic Pitch, SheetSage, Piano) now stream live logs to the **Gradio Progress Bar**.
+    - All transcription modes (Omnizart, Basic Pitch, atoscore, Piano) now stream live logs to the **Gradio Progress Bar**.
     - Added a **Terminal Timer** thread to show elapsed time in the console, preventing "is it frozen?" anxiety.
 - **Gradio Interface**:
     - Polished Dark Mode UI.
@@ -59,8 +59,8 @@ This major release transforms Sheet Sage into a unified MIR (Music Information R
 
 ### Improved
 - **Model Efficiency**: Optimized model inference for better performance on consumer GPUs (e.g., GTX 1060 6GB).
-    - **VRAM Reduction**: Implemented Automatic Mixed Precision (AMP) using `torch.amp.autocast("cuda")` in `sheetsage/infer.py` to significantly reduce VRAM usage during inference.
-    - **Compute Optimization**: Enabled `batch_first=True` for `TransformerEncoder` in `sheetsage/modules/modules.py` to improve memory access patterns and inference speed on CUDA devices.
+    - **VRAM Reduction**: Implemented Automatic Mixed Precision (AMP) using `torch.amp.autocast("cuda")` in `atoscore/infer.py` to significantly reduce VRAM usage during inference.
+    - **Compute Optimization**: Enabled `batch_first=True` for `TransformerEncoder` in `atoscore/modules/modules.py` to improve memory access patterns and inference speed on CUDA devices.
 
 ## [v0.3.3] - 2025-12-18
 
@@ -162,3 +162,4 @@ This major release transforms Sheet Sage into a unified MIR (Music Information R
 - Refactored `decode_audio` to use `BytesIO` for in-memory audio decoding, removing unnecessary temporary file creation.
 - Updated `launch_gradio.py` to automatically configure `JUKEBOX_CACHE_DIR` to the local project folder.
 - Updated `README.md` with new features and manual model setup instructions.
+

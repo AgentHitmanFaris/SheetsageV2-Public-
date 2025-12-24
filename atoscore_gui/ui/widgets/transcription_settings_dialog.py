@@ -47,11 +47,11 @@ class TranscriptionSettingsDialog(QDialog):
         
         self.mode_combo = QComboBox()
         self.mode_combo.addItems([
+            "Basic Pitch (Standalone - No Harmony)",
             "Lead Sheet (Standard)",
             "Piano (Polyphonic)",
-            "Basic Pitch (Polyphonic)",
             "Drums (Omnizart)",
-            "SheetSage V3 (Lunaverus)"
+            "atoscore V3 (Lunaverus)"
         ])
         self.mode_combo.setCurrentIndex(0)
         self.mode_combo.currentTextChanged.connect(self._on_mode_changed)
@@ -165,11 +165,11 @@ class TranscriptionSettingsDialog(QDialog):
     def _on_mode_changed(self, mode_text):
         """Handle mode selection change"""
         descriptions = {
+            "Basic Pitch (Standalone - No Harmony)": "Pure Basic Pitch MIDI (No beat/chord analysis)",
             "Lead Sheet (Standard)": "Melody + Chords + Key + Tempo",
             "Piano (Polyphonic)": "Polyphonic piano transcription",
-            "Basic Pitch (Polyphonic)": "Spotify's model with pitch bends",
             "Drums (Omnizart)": "Drum kit transcription",
-            "SheetSage V3 (Lunaverus)": "CNN trained on MAESTRO"
+            "atoscore V3 (Lunaverus)": "CNN trained on MAESTRO"
         }
         self.mode_desc.setText(descriptions.get(mode_text, ""))
     
@@ -186,3 +186,4 @@ class TranscriptionSettingsDialog(QDialog):
         
         self.transcription_confirmed.emit(config)
         self.accept()
+

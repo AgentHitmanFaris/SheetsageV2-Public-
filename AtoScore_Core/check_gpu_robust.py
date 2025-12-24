@@ -2,7 +2,7 @@ import os
 import sys
 
 # Inject the cuda_libs path directly into the process PATH / DLL directory search
-cuda_libs = r"D:\Document\sheetsage\SheetSage_Core\cuda_libs"
+cuda_libs = r"D:\Document\atoscore\atoscore_Core\cuda_libs"
 os.environ["PATH"] = cuda_libs + ";" + os.environ["PATH"]
 
 # Also try the Python 3.8+ specific DLL loading mechanism
@@ -31,4 +31,5 @@ else:
         print(" - Successfully loaded cudart64_110.dll manually (Library is accessible)")
     except Exception as e:
         print(f" - Failed to load cudart64_110.dll manually: {e}")
+
 

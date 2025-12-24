@@ -8,8 +8,8 @@ import torch.optim as optim
 from torch.utils.data import Dataset, DataLoader
 
 # Import project modules
-from sheetsage.modules import EncOnlyTransducer, TransformerEncoder
-from sheetsage.infer import (
+from atoscore.modules import EncOnlyTransducer, TransformerEncoder
+from atoscore.infer import (
     InputFeats, Task,
     _INPUT_TO_DIM, _TASK_TO_VOCAB_SIZE, _MAX_TERTIARIES_PER_CHUNK
 )
@@ -163,3 +163,4 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     train(args)
+

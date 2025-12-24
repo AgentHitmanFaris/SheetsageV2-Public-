@@ -2,10 +2,10 @@
 
 
 a = Analysis(
-    ['d:\\Document\\sheetsage\\newUI\\launcher.py'],
-    pathex=['d:\\Document\\sheetsage\\SheetSage_Core', 'd:\\Document\\sheetsage\\newUI'],
+    ['d:\\Document\\atoscore\\newUI\\launcher.py'],
+    pathex=['d:\\Document\\atoscore\\atoscore_Core', 'd:\\Document\\atoscore\\newUI'],
     binaries=[],
-    datas=[('d:\\Document\\sheetsage\\newUI\\resources', 'resources'), ('d:\\Document\\sheetsage\\SheetSage_Core\\sheetsage', 'sheetsage'), ('d:\\Document\\sheetsage\\SheetSage_Core\\libs', 'libs')],
+    datas=[('d:\\Document\\atoscore\\newUI\\resources', 'resources'), ('d:\\Document\\atoscore\\atoscore_Core\\atoscore', 'atoscore'), ('d:\\Document\\atoscore\\atoscore_Core\\libs', 'libs')],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},
@@ -21,7 +21,7 @@ exe = EXE(
     a.scripts,
     [],
     exclude_binaries=True,
-    name='SheetSage',
+    name='atoscore',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
@@ -32,7 +32,7 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon=['d:\\Document\\sheetsage\\newUI\\resources\\logo.png'],
+    icon=['d:\\Document\\atoscore\\newUI\\resources\\logo.png'],
 )
 coll = COLLECT(
     exe,
@@ -41,5 +41,6 @@ coll = COLLECT(
     strip=False,
     upx=True,
     upx_exclude=[],
-    name='SheetSage',
+    name='atoscore',
 )
+

@@ -1,7 +1,7 @@
 
 import os
 
-file_path = r"D:\Document\sheetsage\python_embeded\lib\site-packages\jukebox\utils\dist_adapter.py"
+file_path = r"D:\Document\atoscore\python_embeded\lib\site-packages\jukebox\utils\dist_adapter.py"
 
 try:
     with open(file_path, 'r') as f:
@@ -29,3 +29,4 @@ try:
 
 except Exception as e:
     print(f"Failed to patch {file_path}: {e}")
+

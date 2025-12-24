@@ -10,7 +10,8 @@ install_requires = [
 ]
 
 setup(
-    name="sheetsage",
-    packages=["sheetsage"],
+    name="atoscore",
+    packages=["atoscore"],
     install_requires=install_requires,
 )
+

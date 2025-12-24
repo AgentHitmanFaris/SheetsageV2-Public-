@@ -6,9 +6,9 @@ from scipy.io import wavfile
 
 logging.basicConfig(level=logging.INFO)
 
-midi_path = r"D:\Document\sheetsage\SheetSage_Core\output\omnizart_advanced\20251220_2102_Aisha_Retno_-_Tak_Ad_drum_8d0ffb\Aisha Retno - Tak Adil Official Music Video fMiH9F7O9eM.mid"
-soundfont_path = r"D:\Document\sheetsage\SheetSage_Core\soundfont\MS Basic.sf3"
-output_dir = r"D:\Document\sheetsage\SheetSage_Core\temp"
+midi_path = r"D:\Document\atoscore\atoscore_Core\output\omnizart_advanced\20251220_2102_Aisha_Retno_-_Tak_Ad_drum_8d0ffb\Aisha Retno - Tak Adil Official Music Video fMiH9F7O9eM.mid"
+soundfont_path = r"D:\Document\atoscore\atoscore_Core\soundfont\MS Basic.sf3"
+output_dir = r"D:\Document\atoscore\atoscore_Core\temp"
 
 def synthesize_midi(midi_path, soundfont_path_config, output_dir, filename="output.wav"):
     try:
@@ -60,3 +60,4 @@ def synthesize_midi(midi_path, soundfont_path_config, output_dir, filename="outp
         return None
 
 synthesize_midi(midi_path, soundfont_path, output_dir)
+

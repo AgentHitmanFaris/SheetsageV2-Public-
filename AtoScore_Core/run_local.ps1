@@ -7,7 +7,7 @@ $VenvDir = ".venv"
 # Python Embeded is likely still at ../python_embeded. The user said "remove garbage", but python_embeded was potentially left at root.
 # Let's check where python_embeded is.
 # IF the user said "correct all file/folder position", I should check if they want python_embeded moved too. 
-# Usually huge runtimes are kept at root. But if we moved libs/bin/cache/output/.sheetsage to Core, we should look for them in Core.
+# Usually huge runtimes are kept at root. But if we moved libs/bin/cache/output/.atoscore to Core, we should look for them in Core.
 $PythonEmbeded = Join-Path $PSScriptRoot "python_embeded"
 $BinDir = Join-Path $PSScriptRoot "bin"
 $CacheDir = Join-Path $PSScriptRoot "cache"
@@ -50,13 +50,13 @@ if (Test-Path $LibsDir) {
     }
 }
 
-# Set cache dir: Use local .sheetsage if it exists (user provided models), else use default 'cache'
-$LocalModels = Join-Path $PSScriptRoot ".sheetsage"
+# Set cache dir: Use local .atoscore if it exists (user provided models), else use default 'cache'
+$LocalModels = Join-Path $PSScriptRoot ".atoscore"
 if (Test-Path $LocalModels) {
-    Write-Host "Found local models in '.sheetsage'. Using them."
-    $Env:SHEETSAGE_CACHE_DIR = $LocalModels
+    Write-Host "Found local models in '.atoscore'. Using them."
+    $Env:ATOSCORE_CACHE_DIR = $LocalModels
 } else {
-    $Env:SHEETSAGE_CACHE_DIR = $CacheDir
+    $Env:ATOSCORE_CACHE_DIR = $CacheDir
 }
 
 # Add local CUDA libs (Portable Setup)
@@ -66,7 +66,6 @@ if (Test-Path $CudaLibs) {
     # Also set CUDA_PATH and related vars to help TF find it if needed
     $Env:CUDA_PATH = $CudaLibs
     $Env:CUDA_PATH_V11_2 = $CudaLibs
-    Write-Host "Added local CUDA libraries to PATH: $CudaLibs"
     Write-Host "Added local CUDA libraries to PATH: $CudaLibs"
 }
 
@@ -78,7 +77,7 @@ if (-not (Test-Path $LocalTemp)) {
 }
 $Env:TEMP = $LocalTemp
 $Env:TMP = $LocalTemp
-$Env:SHEETSAGE_TEMP = $LocalTemp
+$Env:ATOSCORE_TEMP = $LocalTemp
 Write-Host "Redirected TEMP files to: $LocalTemp"
 
 # Redirect AI Model Caches (HuggingFace, Torch)
@@ -89,8 +88,8 @@ Write-Host "Redirected Model Caches to: $RootDir\cache"
 # Run the Gradio interface
 Write-Host "Starting Gradio Interface..."
 # Determine Python Executable
-if ($Env:SHEETSAGE_PYTHON_EXE) {
-    $PythonExec = $Env:SHEETSAGE_PYTHON_EXE
+if ($Env:ATOSCORE_PYTHON_EXE) {
+    $PythonExec = $Env:ATOSCORE_PYTHON_EXE
 }
 elseif (Test-Path $PythonEmbeded) {
     $PythonExec = Join-Path $PythonEmbeded "python.exe"
@@ -104,11 +103,11 @@ else {
 
 # Run the Gradio interface
 # Run the Native UI Interface
-Write-Host "Starting Sheet Sage Native UI..."
+Write-Host "Starting NC- AtoScore Native UI..."
 Write-Host "Using Python: $PythonExec"
 
 # Path to new UI launcher
-$LauncherPath = Join-Path $RootDir "..\sheetsage_gui\main.py"
+$LauncherPath = Join-Path $RootDir "..\atoscore_gui\main.py"
 
 # Loop for restart capability (Exit Code 42 = Restart)
 $ExitCode = 42
@@ -118,7 +117,8 @@ while ($ExitCode -eq 42) {
     & $PythonExec $LauncherPath $ScriptArgs
     $ExitCode = $LASTEXITCODE
     if ($ExitCode -eq 42) {
-        Write-Host "Restarting Sheet Sage..." -ForegroundColor Cyan
+        Write-Host "Restarting NC- AtoScore..." -ForegroundColor Cyan
         Start-Sleep -Seconds 1
     }
 }
+

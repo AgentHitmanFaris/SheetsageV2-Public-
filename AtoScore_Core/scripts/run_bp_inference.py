@@ -16,8 +16,8 @@ if sys.stdout.encoding.lower() != 'utf-8':
 
 # Set up environment BEFORE imports
 # Point to local cache directory
-local_cache = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".sheetsage"))
-os.environ["SHEETSAGE_CACHE_DIR"] = local_cache
+local_cache = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".atoscore"))
+os.environ["atoscore_CACHE_DIR"] = local_cache
 os.environ["BASIC_PITCH_USE_ONNX"] = "1" 
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
@@ -41,7 +41,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 # Configure logging to output to stdout in a format we can parse or just read
 logging.basicConfig(level=logging.INFO, format='%(message)s')
 
-from sheetsage.basic_pitch_transcription import transcribe_basic_pitch
+from atoscore.basic_pitch_transcription import transcribe_basic_pitch
 
 def main():
     parser = argparse.ArgumentParser(description='Run Basic Pitch Transcription')
@@ -89,3 +89,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

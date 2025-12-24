@@ -149,7 +149,7 @@ class HistoryBrowser(QDialog):
             elif item.startswith("drums_"):
                 mode = "Drums"
             elif item.startswith("lunaverus_"):
-                mode = "SheetSage V3"
+                mode = "atoscore V3"
             
             project = {
                 'path': project_path,
@@ -265,3 +265,4 @@ class HistoryBrowser(QDialog):
                 return f"{size_bytes:.1f} {unit}"
             size_bytes /= 1024
         return f"{size_bytes:.1f} TB"
+

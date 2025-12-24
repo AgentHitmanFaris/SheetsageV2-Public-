@@ -1,4 +1,4 @@
-# SheetSage Native UI - Quick Start Guide
+# atoscore Native UI - Quick Start Guide
 
 ## ✅ Current Status
 
@@ -22,8 +22,8 @@
 
 1. **Launch the application:**
    ```bash
-   cd d:/Document/sheetsage/newUI
-   D:\Document\sheetsage\SheetSage_Core\python_embeded\python.exe launcher.py
+   cd d:/Document/atoscore/newUI
+   D:\Document\atoscore\atoscore_Core\python_embeded\python.exe launcher.py
    ```
 
 2. **Test file selection:**
@@ -63,7 +63,7 @@
 - QThread for async transcription
 - Progress signals
 - Cancel functionality
-- Call existing backend functions from SheetSage_Core
+- Call existing backend functions from atoscore_Core
 
 ### 4. Settings Dialog
 - Soundfont path configuration
@@ -77,9 +77,9 @@
 
 ## 📝 Development Notes
 
-- **Backend Integration**: All backend modules in `../SheetSage_Core/sheetsage/` are ready to use
+- **Backend Integration**: All backend modules in `../atoscore_Core/atoscore/` are ready to use
 - **No Gradio Conflicts**: Both UIs can run simultaneously
-- **Migration Path**: Once stable, move `newUI/` to `SheetSage_Core/sheetsage_native/`
+- **Migration Path**: Once stable, move `newUI/` to `atoscore_Core/atoscore_native/`
 
 ## 🎨 UI Design
 
@@ -104,3 +104,4 @@ None currently! 🎉
 - [ ] Worker threads
 - [ ] Settings & History
 - [ ] Build & Packaging
+

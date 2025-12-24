@@ -1,5 +1,5 @@
 """
-Main Window for SheetSage Native UI
+Main Window for atoscore Native UI
 Implements the primary application window with menu bar, toolbar, and three-panel layout
 """
 
@@ -19,7 +19,14 @@ class MainWindow(QMainWindow):
     
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("NC- AtoScore - Music Transcription Suite")
+        self.setWindowTitle("NC- AtoScore")
+        
+        # Set window icon
+        icon_path = os.path.join(os.path.dirname(__file__), '..', 'assets', 'resources', 'logo.png')
+        if os.path.exists(icon_path):
+            self.setWindowIcon(QIcon(icon_path))
+        
+        self.setGeometry(100, 100, 1400, 800)
         self.setMinimumSize(1400, 800)
         
         # Transcription state
@@ -60,7 +67,7 @@ class MainWindow(QMainWindow):
         
         open_project_action = QAction("📦 Open &Project (.sage)...", self)
         open_project_action.setShortcut("Ctrl+Shift+O")
-        open_project_action.setStatusTip("Open a saved SheetSage project file")
+        open_project_action.setStatusTip("Open a saved atoscore project file")
         open_project_action.triggered.connect(self._on_open_project)
         file_menu.addAction(open_project_action)
         
@@ -369,7 +376,7 @@ class MainWindow(QMainWindow):
         # Suggest filename
         default_name = os.path.basename(self.current_output_dir) + ".sage"
         
-        from widgets.settings_dialog import SettingsDialog
+        from ui.widgets.settings_dialog import SettingsDialog
         settings = SettingsDialog.load_settings_from_file()
         output_dir = settings.get('output_dir', os.path.join(os.getcwd(), 'output'))
         
@@ -377,7 +384,7 @@ class MainWindow(QMainWindow):
             self,
             "Save Project",
             os.path.join(output_dir, default_name),
-            "SheetSage Projects (*.sage);;All Files (*.*)"
+            "atoscore Projects (*.sage);;All Files (*.*)"
         )
         
         if not save_path:
@@ -761,9 +768,9 @@ class MainWindow(QMainWindow):
             
         file_path, _ = QFileDialog.getOpenFileName(
             self,
-            "Open SheetSage Project",
+            "Open atoscore Project",
             os.path.join(os.getcwd(), '..', 'AtoScore_Core', 'output'),
-            "SheetSage Projects (*.sage);;All Files (*.*)"
+            "atoscore Projects (*.sage);;All Files (*.*)"
         )
         
         if file_path:
@@ -1074,7 +1081,7 @@ class MainWindow(QMainWindow):
         # Run in background to avoid freezing UI
         # For now, running synchronously for simplicity, but should be threaded
         try:
-            from sheetsage.audio_utils import synthesize_midi
+            from atoscore.audio_utils import synthesize_midi
             
             # Determine output wav path (overwrite synth.wav or create new)
             output_dir = os.path.dirname(midi_path)
@@ -1131,7 +1138,7 @@ class MainWindow(QMainWindow):
     
     def _on_settings(self):
         """Handle settings action"""
-        from widgets.settings_dialog import SettingsDialog
+        from ui.widgets.settings_dialog import SettingsDialog
         dialog = SettingsDialog(self, self._get_current_settings())
         dialog.settings_saved.connect(self._on_settings_saved)
         dialog.exec()
@@ -1139,7 +1146,7 @@ class MainWindow(QMainWindow):
     def _get_current_settings(self):
         """Get current application settings"""
         # Load from file or return defaults
-        from widgets.settings_dialog import SettingsDialog
+        from ui.widgets.settings_dialog import SettingsDialog
         return SettingsDialog.load_settings_from_file()
     
     def _on_settings_saved(self, settings):
@@ -1149,8 +1156,8 @@ class MainWindow(QMainWindow):
     
     def _on_history(self):
         """Handle history action"""
-        from widgets.history_browser import HistoryBrowser
-        from widgets.settings_dialog import SettingsDialog
+        from ui.widgets.history_browser import HistoryBrowser
+        from ui.widgets.settings_dialog import SettingsDialog
         import os
         
         # Get output directory from settings
@@ -1229,11 +1236,11 @@ class MainWindow(QMainWindow):
         """Handle about action"""
         QMessageBox.about(
             self,
-            "About Sheet Sage",
-            "<h2>Sheet Sage V3</h2>"
+            "About NC- AtoScore",
+            "<h2>NC- AtoScore</h2>"
             "<p>AI Music Transcription Suite for Windows</p>"
             "<p>Version 3.0.0</p>"
-            "<p>Developed by Muhammad Faris Hakim</p>"
+            "<p>Developed by NC-Engineering</p>"
             "<p>Powered by TensorFlow, PyTorch, Gradio, Librosa, Omnizart, Basic Pitch</p>"
         )
     
@@ -1297,3 +1304,4 @@ class MainWindow(QMainWindow):
                             shutil.rmtree(folder_path)
                     except:
                         pass
+

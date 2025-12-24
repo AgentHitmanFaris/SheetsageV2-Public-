@@ -5,7 +5,7 @@ import os
 import os
 import glob
 
-package_dir = r"D:\Document\sheetsage\python_embeded\lib\site-packages\jukebox"
+package_dir = r"D:\Document\atoscore\python_embeded\lib\site-packages\jukebox"
 
 print(f"Scanning {package_dir}...")
 
@@ -24,4 +24,5 @@ for root, dirs, files in os.walk(package_dir):
                         f.write(new_content)
             except Exception as e:
                 print(f"Failed to process {file_path}: {e}")
+
 

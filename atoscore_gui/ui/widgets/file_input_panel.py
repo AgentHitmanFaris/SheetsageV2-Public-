@@ -81,7 +81,7 @@ class FileInputPanel(QWidget):
             self,
             "Open File",
             "",
-            "Audio Files (*.mp3 *.wav *.flac *.m4a *.ogg);;SheetSage Project (*.sage);;All Files (*.*)"
+            "Media Files (*.mp3 *.wav *.flac *.m4a *.ogg *.mp4 *.mkv *.avi *.mov *.webm *.wmv);;Audio Files (*.mp3 *.wav *.flac *.m4a *.ogg);;Video Files (*.mp4 *.mkv *.avi *.mov *.webm *.wmv);;atoscore Project (*.sage);;All Files (*.*)"
         )
         
         if file_path:
@@ -103,3 +103,4 @@ class FileInputPanel(QWidget):
     def _on_transcription_confirmed(self, config):
         """Handle when user confirms transcription settings"""
         self.transcribe_requested.emit(config)
+

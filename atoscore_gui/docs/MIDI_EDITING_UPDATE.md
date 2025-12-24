@@ -168,4 +168,5 @@ None currently - awaiting testing!
 
 ---
 
-*This update brings SheetSage V2's piano roll to professional-grade editing standards!*
+*This update brings atoscore V2's piano roll to professional-grade editing standards!*
+

@@ -3,7 +3,7 @@ import os
 import sys
 
 # Define path to the site-packages
-site_packages = r"D:\Document\sheetsage\python_embeded\lib\site-packages"
+site_packages = r"D:\Document\atoscore\python_embeded\lib\site-packages"
 jukebox_pkg = os.path.join(site_packages, "jukebox")
 
 if not os.path.exists(jukebox_pkg):
@@ -120,3 +120,4 @@ for root, dirs, files in os.walk(jukebox_pkg):
                 print(f"Failed to process {file_path}: {e}")
 
 print(f"Patching Complete. Modified {count_cuda} files for CPU compatibility.")
+

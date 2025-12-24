@@ -30,7 +30,7 @@ class SettingsDialog(QDialog):
         """Get default settings"""
         return {
             'output_dir': os.path.join(os.getcwd(), 'output'),
-            'soundfont_path': os.path.join(os.getcwd(), '..', 'SheetSage_Core', 'soundfont', 'MS Basic.sf3'),
+            'soundfont_path': os.path.join(os.getcwd(), '..', 'atoscore_Core', 'soundfont', 'MS Basic.sf3'),
             'gpu_enabled': True,
             'default_mode': 'Lead Sheet (Standard)',
             'separate_vocals_default': True,
@@ -83,7 +83,7 @@ class SettingsDialog(QDialog):
             "Piano (Polyphonic)",
             "Basic Pitch (Polyphonic)",
             "Drums (Omnizart)",
-            "SheetSage V3 (Lunaverus)"
+            "atoscore V3 (Lunaverus)"
         ])
         mode_layout.addWidget(self.default_mode_combo)
         
@@ -443,3 +443,4 @@ class SettingsDialog(QDialog):
             except Exception:
                 pass
         return SettingsDialog(None)._default_settings()
+

@@ -1,5 +1,5 @@
 """
-Build script for creating a standalone Windows executable of SheetSage.
+Build script for creating a standalone Windows executable of atoscore.
 This uses PyInstaller to bundle the application with all dependencies.
 """
 
@@ -13,7 +13,7 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).parent.resolve()
 DIST_DIR = PROJECT_ROOT / "dist"
 BUILD_DIR = PROJECT_ROOT / "build"
-SPEC_FILE = PROJECT_ROOT / "sheetsage.spec"
+SPEC_FILE = PROJECT_ROOT / "atoscore.spec"
 
 def clean_previous_builds():
     """Remove previous build artifacts."""
@@ -85,9 +85,9 @@ hiddenimports += [
     'pkg_resources.markers',
 ]
 
-# Add sheetsage package data
+# Add atoscore package data
 datas += [
-    ('sheetsage', 'sheetsage'),
+    ('atoscore', 'atoscore'),
     ('soundfont', 'soundfont'),
     ('bin', 'bin'),
     ('libs', 'libs'),
@@ -120,7 +120,7 @@ exe = EXE(
     a.scripts,
     [],
     exclude_binaries=True,
-    name='SheetSage',
+    name='atoscore',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
@@ -142,7 +142,7 @@ coll = COLLECT(
     strip=False,
     upx=True,
     upx_exclude=[],
-    name='SheetSage',
+    name='atoscore',
 )
 """
     
@@ -181,11 +181,11 @@ def copy_additional_files():
     """Copy additional files that need to be in the distribution."""
     print("\n📂 Copying additional files to distribution...")
     
-    dist_sheetsage = DIST_DIR / "SheetSage"
+    dist_atoscore = DIST_DIR / "atoscore"
     
     # Files and directories to copy
     items_to_copy = [
-        ('.sheetsage', '.sheetsage'),  # Pre-trained models
+        ('.atoscore', '.atoscore'),  # Pre-trained models
         ('output', 'output'),  # Output directory
         ('temp', 'temp'),  # Temp directory
         ('temp_playback', 'temp_playback'),  # Playback temp
@@ -201,7 +201,7 @@ def copy_additional_files():
     
     for src, dst in items_to_copy:
         src_path = PROJECT_ROOT / src
-        dst_path = dist_sheetsage / dst
+        dst_path = dist_atoscore / dst
         
         if src_path.exists():
             if src_path.is_dir():
@@ -220,15 +220,15 @@ def create_launcher_script():
     """Create a launcher batch script for the executable."""
     print("\n📝 Creating launcher script...")
     
-    dist_sheetsage = DIST_DIR / "SheetSage"
-    launcher_path = dist_sheetsage / "SheetSage.bat"
+    dist_atoscore = DIST_DIR / "atoscore"
+    launcher_path = dist_atoscore / "atoscore.bat"
     
     launcher_content = """@echo off
-:: SheetSage Launcher
+:: atoscore Launcher
 :: This script sets up the environment and launches the application
 
 echo ========================================
-echo     Sheet Sage V3 Launcher
+echo     NC- AtoScore Launcher
 echo ========================================
 echo.
 
@@ -237,8 +237,8 @@ set "APP_DIR=%~dp0"
 cd /d "%APP_DIR%"
 
 :: Set environment variables
-set "SHEETSAGE_TEMP=%APP_DIR%temp"
-set "SHEETSAGE_CACHE_DIR=%APP_DIR%.sheetsage"
+set "atoscore_TEMP=%APP_DIR%temp"
+set "atoscore_CACHE_DIR=%APP_DIR%.atoscore"
 set "HF_HOME=%APP_DIR%cache\\huggingface"
 set "TORCH_HOME=%APP_DIR%cache\\torch"
 
@@ -255,14 +255,14 @@ if exist "%APP_DIR%cuda_libs" (
 )
 
 :: Create necessary directories
-if not exist "%SHEETSAGE_TEMP%" mkdir "%SHEETSAGE_TEMP%"
+if not exist "%atoscore_TEMP%" mkdir "%atoscore_TEMP%"
 if not exist "%APP_DIR%output" mkdir "%APP_DIR%output"
 if not exist "%APP_DIR%temp_playback" mkdir "%APP_DIR%temp_playback"
 
 :: Launch the application
-echo Starting Sheet Sage...
+echo Starting NC- AtoScore...
 echo.
-"%APP_DIR%SheetSage.exe" %*
+"%APP_DIR%atoscore.exe" %*
 
 :: Check exit code
 if %ERRORLEVEL% EQU 0 (
@@ -284,18 +284,18 @@ def create_readme():
     """Create a README for the distribution."""
     print("\n📝 Creating distribution README...")
     
-    dist_sheetsage = DIST_DIR / "SheetSage"
-    readme_path = dist_sheetsage / "START_HERE.txt"
+    dist_atoscore = DIST_DIR / "atoscore"
+    readme_path = dist_atoscore / "START_HERE.txt"
     
     readme_content = """
 ╔══════════════════════════════════════════════════════════════════╗
-║                    Sheet Sage V3 - Portable                      ║
+║                    NC- AtoScore - Portable                      ║
 ║              AI Music Transcription Suite for Windows            ║
 ╚══════════════════════════════════════════════════════════════════╝
 
 🎼 GETTING STARTED:
 
-1. Double-click "SheetSage.bat" to launch the application
+1. Double-click "atoscore.bat" to launch the application
 2. Wait for the Gradio interface to open in your browser
 3. The application will be available at: http://127.0.0.1:7860
 
@@ -308,14 +308,14 @@ def create_readme():
 
 ⚙️ FIRST RUN:
 
-The first time you run Sheet Sage, it may take a minute to:
+The first time you run NC- AtoScore, it may take a minute to:
 - Initialize the environment
 - Check for GPU support
 - Load pre-trained models
 
 🎵 FEATURES:
 
-- Sheet Sage V3 (Lunaverus CNN): Custom-trained piano transcription
+- NC- AtoScore (Lunaverus CNN): Custom-trained piano transcription
 - Basic Pitch: Spotify's polyphonic transcription with pitch bend
 - Omnizart: Advanced transcription (Music, Drum, Chord, Vocal, Beat)
 - Demucs: Vocal/instrument separation
@@ -347,11 +347,11 @@ The first time you run Sheet Sage, it may take a minute to:
 🔧 SUPPORT:
 
 For issues and questions, please visit:
-https://github.com/your-repo/sheetsage
+https://github.com/your-repo/atoscore
 
 ═══════════════════════════════════════════════════════════════════
 
-Developed by Muhammad Faris Hakim
+Developed by NC-Engineering
 Powered by: TensorFlow, PyTorch, Gradio, Librosa, Omnizart, Basic Pitch
 
 Generated by Antigravity AI
@@ -365,7 +365,7 @@ Generated by Antigravity AI
 def main():
     """Main build process."""
     print("╔══════════════════════════════════════════════════════════════╗")
-    print("║           SheetSage Windows Executable Builder              ║")
+    print("║           atoscore Windows Executable Builder              ║")
     print("╚══════════════════════════════════════════════════════════════╝")
     
     try:
@@ -384,9 +384,9 @@ def main():
         print("\n" + "="*64)
         print("✅ BUILD COMPLETED SUCCESSFULLY!")
         print("="*64)
-        print(f"\n📁 Distribution folder: {DIST_DIR / 'SheetSage'}")
+        print(f"\n📁 Distribution folder: {DIST_DIR / 'atoscore'}")
         print(f"\n📦 Next steps:")
-        print("   1. Test the application by running: dist/SheetSage/SheetSage.bat")
+        print("   1. Test the application by running: dist/atoscore/atoscore.bat")
         print("   2. Create an installer using the Inno Setup script (see build_installer.iss)")
         print("   3. Distribute the installer to users")
         print("\n" + "="*64)
@@ -399,3 +399,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

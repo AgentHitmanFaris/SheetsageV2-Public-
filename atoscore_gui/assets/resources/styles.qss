@@ -1,4 +1,4 @@
-/* SheetSage Native UI Stylesheet - AnthemScore Aesthetic */
+/* atoscore Native UI Stylesheet - AnthemScore Aesthetic */
 QMainWindow, QDialog { background-color: #121212; color: #e0e0e0; }
 QWidget { background-color: #121212; color: #e0e0e0; font-family: "Segoe UI", sans-serif; font-size: 10pt; }
 
@@ -104,3 +104,4 @@ QProgressBar {
     color: white;
 }
 QProgressBar::chunk { background-color: #2196f3; } /* Blue Progress */
+

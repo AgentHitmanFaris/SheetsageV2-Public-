@@ -129,7 +129,7 @@ def extract_cuda_dlls():
         print("\n✓ CUDA 11.2 runtime DLL installed successfully!")
         print("\n" + "="*70)
         print("Next Steps:")
-        print("1. Restart the SheetSage application")
+        print("1. Restart the atoscore application")
         print("2. Try Omnizart transcription - GPU should now work!")
         print("="*70)
         
@@ -157,10 +157,11 @@ if __name__ == "__main__":
             print("\nAlternative: Manual installation")
             print("1. Use 7-Zip to extract the CUDA installer")
             print("2. Copy cudart64_110.dll from cuda_cudart\\cudart\\bin")
-            print("3. Paste to: D:\\Document\\sheetsage\\SheetSage_Core\\cuda_libs")
+            print("3. Paste to: D:\\Document\\atoscore\\atoscore_Core\\cuda_libs")
     except KeyboardInterrupt:
         print("\n\nCancelled by user.")
     except Exception as e:
         print(f"\nFatal error: {e}")
     
     input("\nPress Enter to close...")
+

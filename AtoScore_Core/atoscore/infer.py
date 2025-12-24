@@ -235,8 +235,14 @@ def _beat_tracking_with_hints(
         else [3, 4],
         beats_per_minute_hint=beats_per_minute_hint,
     )
-    if first_downbeat_idx is None or beats_per_measure is None or len(beats) == 0:
-        raise ValueError("Audio too short to detect time signature")
+    # Safety check for supported time signatures
+    if beats_per_measure not in [3, 4]:
+        logging.warning(f"Unsupported beats_per_measure {beats_per_measure} detected by BeatNet. Defaulting to 4.")
+        beats_per_measure = 4
+        
+    # Ensure first_downbeat_idx is within [0, beats_per_measure)
+    first_downbeat_idx = first_downbeat_idx % beats_per_measure
+    
     assert first_downbeat_idx >= 0 and first_downbeat_idx < beats_per_measure
     assert beats_per_measure in [3, 4]
     beats = [beat_detection_start + t for t in beats]

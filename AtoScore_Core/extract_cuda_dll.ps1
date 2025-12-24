@@ -9,8 +9,8 @@ Write-Host "=============================================="
 
 # Paths
 $cudaInstaller = "D:\Download\Programs\cuda_11.2.2_461.33_win10.exe"
-$cudaLibsDir = "D:\Document\sheetsage\SheetSage_Core\cuda_libs"
-$tempDir = "D:\Document\sheetsage\SheetSage_Core\temp_cuda"
+$cudaLibsDir = "D:\Document\atoscore\atoscore_Core\cuda_libs"
+$tempDir = "D:\Document\atoscore\atoscore_Core\temp_cuda"
 
 # Verify installer exists
 if (-not (Test-Path $cudaInstaller)) {
@@ -91,7 +91,7 @@ try {
         Write-Host "  Size: $([math]::Round($newSize, 2)) KB"
         Write-Host "  Date: $($newDate.ToString('yyyy-MM-dd HH:mm'))"
         Write-Host "`nNext steps:"
-        Write-Host "1. Restart SheetSage application"
+        Write-Host "1. Restart atoscore application"
         Write-Host "2. GPU acceleration should now work!"
         Write-Host "=============================================="
     }
@@ -109,3 +109,4 @@ try {
     }
     Write-Host "Cleanup complete"
 }
+

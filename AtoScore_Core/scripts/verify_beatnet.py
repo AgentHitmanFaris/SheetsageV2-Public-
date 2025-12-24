@@ -3,8 +3,8 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from scipy.io.wavfile import read as wavread
-from sheetsage.assets import retrieve_asset
-from sheetsage.beat_track import beatnet_beat_track
+from atoscore.assets import retrieve_asset
+from atoscore.beat_track import beatnet_beat_track
 
 def test_beatnet():
     try:
@@ -37,3 +37,4 @@ def test_beatnet():
 
 if __name__ == "__main__":
     test_beatnet()
+

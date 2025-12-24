@@ -1,4 +1,4 @@
-# SheetSage Native UI - Development Complete ✅
+# atoscore Native UI - Development Complete ✅
 
 ## 🎉 Version 0.4.0 - Production Ready
 
@@ -102,7 +102,7 @@
 2. ✅ **Piano (Polyphonic)** - ByteDance model
 3. ✅ **Basic Pitch (Polyphonic)** - Spotify's model
 4. ✅ **Drums (Omnizart)** - Drum transcription
-5. ✅ **SheetSage V3 (Lunaverus)** - Custom CNN
+5. ✅ **atoscore V3 (Lunaverus)** - Custom CNN
 
 ### User Workflow
 1. Click **"📂 Open..."** → Select audio file
@@ -174,7 +174,7 @@
 ## Deployment
 
 ### Repository
-- **GitHub**: [AgentHitmanFaris/sheetsageV2](https://github.com/AgentHitmanFaris/sheetsageV2)
+- **GitHub**: [AgentHitmanFaris/atoscoreV2](https://github.com/AgentHitmanFaris/atoscoreV2)
 - **Latest Commit**: `13e05a4` (v0.4.0)
 - **Branch**: `main`
 - **Status**: ✅ Pushed and synced
@@ -207,7 +207,7 @@
 
 ## Conclusion
 
-The **SheetSage Native UI** is a complete, production-ready desktop application for professional audio transcription. It successfully replaces the previous Gradio web interface with a native Qt application that provides:
+The **atoscore Native UI** is a complete, production-ready desktop application for professional audio transcription. It successfully replaces the previous Gradio web interface with a native Qt application that provides:
 
 - **Better Performance** - No browser overhead
 - **Native Experience** - OS-integrated windows
@@ -223,3 +223,4 @@ The **SheetSage Native UI** is a complete, production-ready desktop application 
 *Last Updated: December 23, 2025*  
 *Version: 0.4.0*  
 *Developer: AgentHitmanFaris with Antigravity AI*
+

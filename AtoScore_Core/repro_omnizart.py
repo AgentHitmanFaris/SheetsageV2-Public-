@@ -2,12 +2,12 @@ import sys
 import os
 sys.path.append(os.getcwd())
 import logging
-from sheetsage.modules.omnizart_transcription import run_omnizart
+from atoscore.modules.omnizart_transcription import run_omnizart
 
 logging.basicConfig(level=logging.INFO)
 
-input_file = r"d:\Document\sheetsage\SheetSage_Core\temp\safe_inputs\input_570bf76e.mp3"
-output_dir = r"d:\Document\sheetsage\SheetSage_Core\temp\omnizart_debug"
+input_file = r"d:\Document\atoscore\atoscore_Core\temp\safe_inputs\input_570bf76e.mp3"
+output_dir = r"d:\Document\atoscore\atoscore_Core\temp\omnizart_debug"
 
 # Ensure output dir exists
 if not os.path.exists(output_dir):
@@ -19,3 +19,4 @@ if result:
     print(f"Success: {result}")
 else:
     print("Failure")
+

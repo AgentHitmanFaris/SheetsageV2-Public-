@@ -134,7 +134,10 @@ def beatnet_beat_track(sr, audio, beats_per_bar=None, beats_per_minute_hint=None
                 if b_idx == 1:
                     first_downbeat = i
                     break
-                    
+            
+            # Ensure first_downbeat is bar-local
+            first_downbeat = first_downbeat % detected_beats_per_bar
+            
             merged = [round(t * 100) / 100 for t in beat_times.tolist()]
             return first_downbeat, detected_beats_per_bar, merged
             

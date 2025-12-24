@@ -1,7 +1,7 @@
 import os
 import shutil
 
-root_libs = r"D:\Document\sheetsage\SheetSage_Core\cuda_libs"
+root_libs = r"D:\Document\atoscore\atoscore_Core\cuda_libs"
 required_dlls = [
     "cublas64_11.dll",
     "cublasLt64_11.dll", 
@@ -40,3 +40,4 @@ if missing:
     print(f"MISSING: {missing}")
 else:
     print("SUCCESS: All DLLs present.")
+

@@ -15,7 +15,7 @@ if hasattr(os, 'add_dll_directory'):
 
 import pretty_midi
 
-midi_path = r"D:\Document\sheetsage\output\debug_test.mid"
+midi_path = r"D:\Document\atoscore\output\debug_test.mid"
 
 if os.path.exists(midi_path):
     print(f"Inspecting MIDI: {midi_path}")
@@ -34,3 +34,4 @@ if os.path.exists(midi_path):
         print(f"Failed to inspect MIDI: {e}")
 else:
     print(f"Error: MIDI file not found at {midi_path}")
+

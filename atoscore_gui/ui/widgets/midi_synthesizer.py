@@ -26,7 +26,7 @@ class MidiSynthesizer:
         """Locate default TimGM6mb.sf2 from pretty_midi"""
         possible_paths = [
             # Relative to current script
-            os.path.join(os.path.dirname(__file__), '..', '..', 'SheetSage_Core', 'python_embeded', 'Lib', 'site-packages', 'pretty_midi', 'TimGM6mb.sf2'),
+            os.path.join(os.path.dirname(__file__), '..', '..', 'atoscore_Core', 'python_embeded', 'Lib', 'site-packages', 'pretty_midi', 'TimGM6mb.sf2'),
             # Standard install
             os.path.join(sys.prefix, 'Lib', 'site-packages', 'pretty_midi', 'TimGM6mb.sf2'),
             # Local fallback
@@ -113,3 +113,4 @@ class MidiSynthesizer:
         if self.fs:
             self.fs.delete()
             self.fs = None
+

@@ -7,8 +7,8 @@ Native Windows desktop application for NC- AtoScore music transcription suite.
 ### Running the Application
 
 ```bash
-cd d:/Document/sheetsage/sheetsage_gui
-D:\Document\sheetsage\SheetSage_Core\python_embeded\python.exe main.py
+cd d:/Document/atoscore/atoscore_gui
+D:\Document\atoscore\atoscore_Core\python_embeded\python.exe main.py
 ```
 
 ### Development Status
@@ -59,15 +59,15 @@ newUI/
 
 ## Backend Integration
 
-The native UI imports backend modules from `../SheetSage_Core`:
+The native UI imports backend modules from `../atoscore_Core`:
 
 ```python
 import sys
-sys.path.insert(0, '../SheetSage_Core')
+sys.path.insert(0, '../atoscore_Core')
 
-from sheetsage.basic_pitch_transcription import transcribe_basic_pitch
-from sheetsage.piano_transcription import transcribe_piano
-from sheetsage.modules.omnizart_transcription import run_omnizart
+from atoscore.basic_pitch_transcription import transcribe_basic_pitch
+from atoscore.piano_transcription import transcribe_piano
+from atoscore.modules.omnizart_transcription import run_omnizart
 # ... etc
 ```
 
@@ -93,10 +93,11 @@ python -m pytest tests/ -v
 python build_exe.py
 ```
 
-This will create a standalone `SheetSage.exe` in the `dist/` folder.
+This will create a standalone `atoscore.exe` in the `dist/` folder.
 
 ## Notes
 
-- **Parallel Development**: This folder is separate from SheetSage_Core to allow testing both UIs
-- **Migration**: Once stable, this will be moved to `SheetSage_Core/sheetsage_native/`
-- **Dependencies**: Uses the same Python environment as SheetSage_Core
+- **Parallel Development**: This folder is separate from atoscore_Core to allow testing both UIs
+- **Migration**: Once stable, this will be moved to `atoscore_Core/atoscore_native/`
+- **Dependencies**: Uses the same Python environment as atoscore_Core
+

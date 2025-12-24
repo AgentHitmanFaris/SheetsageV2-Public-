@@ -1,13 +1,13 @@
 """
-Main entry point for SheetSage Native UI
+Main entry point for atoscore Native UI
 """
 
 import sys
 import os
 
-# Add SheetSage_Core to path
+# Add atoscore_Core to path
 current_dir = os.path.dirname(os.path.abspath(__file__))
-# Note: we are already in sheetsage_gui, so we don't need to add it to path if we run from top level,
+# Note: we are already in atoscore_gui, so we don't need to add it to path if we run from top level,
 # but keeping current_dir for internal relative imports parity.
 sys.path.insert(0, current_dir)
 sys.path.insert(0, os.path.abspath(os.path.join(current_dir, '..', 'AtoScore_Core')))
@@ -101,3 +101,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+

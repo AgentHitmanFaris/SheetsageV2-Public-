@@ -1,4 +1,4 @@
-# 🎉 SheetSage Native UI - COMPLETE!
+# 🎉 atoscore Native UI - COMPLETE!
 
 ## ✅ UI Development: 100% COMPLETE
 
@@ -74,7 +74,7 @@ The UI is **100% complete**. Remaining work is backend integration:
 
 1. **Worker Threads** (2-4 hours):
    - Create `TranscriptionWorker` QThread class
-   - Import backend functions from `../SheetSage_Core/sheetsage/`
+   - Import backend functions from `../atoscore_Core/atoscore/`
    - Connect progress signals to UI
    - Handle completion and errors
 
@@ -91,8 +91,8 @@ The UI is **100% complete**. Remaining work is backend integration:
 ### Testing the Complete UI:
 
 ```bash
-cd d:/Document/sheetsage/newUI
-D:\Document\sheetsage\SheetSage_Core\python_embeded\python.exe launcher.py
+cd d:/Document/atoscore/newUI
+D:\Document\atoscore\atoscore_Core\python_embeded\python.exe launcher.py
 ```
 
 **Test Checklist:**
@@ -152,7 +152,7 @@ The UI shell is complete and fully functional. Next steps:
    ```
 
 2. **Connect to existing backend**:
-   - Import from `../SheetSage_Core/sheetsage/`
+   - Import from `../atoscore_Core/atoscore/`
    - Call existing transcription functions
    - No backend changes needed!
 
@@ -164,3 +164,4 @@ The UI shell is complete and fully functional. Next steps:
 ---
 
 **UI Development: COMPLETE! Ready for backend integration.**
+
