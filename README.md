@@ -1,189 +1,31 @@
-# NC- AtoScore - Professional Audio Transcription
+# NC- AtoScore
 
-![NC- AtoScore Logo](ic_logo.png)
+Professional AI-powered music transcription software for Windows.
 
-**NC- AtoScore** is a professional AI-powered audio transcription tool that converts music into lead sheets, MIDI files, and sheet music. Built with state-of-the-art machine learning models and featuring a sleek, native desktop interface.
+## Features
 
-## Key Features
+- Audio-to-MIDI transcription
+- Multiple AI models (Basic Pitch, Piano, Drums)
+- Video file support
+- Native Windows UI
+- GPU acceleration
 
-### Multiple Transcription Modes
-- **Basic Pitch (Standalone)** - Pure Spotify model, no harmony analysis
-- **Lead Sheet (Standard)** - Melody + Chords + Key + Tempo detection
-- **Piano (Polyphonic)** - Full piano transcription with pedal detection
-- **Drums (Omnizart)** - Drum kit transcription
-- **AtoScore V3 (Lunaverus)** - Custom CNN trained on MAESTRO dataset
+## Quick Start
 
-### Media Support
-- **Audio Files** - MP3, WAV, FLAC, M4A, OGG
-- **Video Files** - MP4, MKV, AVI, MOV, WebM, WMV
-- **Automatic Audio Extraction** - FFmpeg-powered extraction from video files
-- **Project Files** - Save/load `.sage` project files
+1. Clone this repository
+2. Run `setup_local.bat`
+3. Run `run_local.bat`
 
-### Professional Native UI
-- **AnthemScore-Inspired Design** - Clean, modern dark theme
-- **Dialog-Based Workflow** - Intuitive: Open → Configure → Transcribe
-- **Real-Time Piano Roll** - Visualize notes with spectrogram background
-- **Audio Mixer** - Synchronized playback with independent volume controls
-- **Live Progress Tracking** - See transcription status in real-time
-- **Interactive Editing** - Live MIDI preview and note manipulation
+## Requirements
 
-### Advanced Features
-- **Vocal Separation** - Integrated Demucs for cleaner melody extraction
-- **GPU Acceleration** - CUDA-optimized for fast processing (NVIDIA required)
-- **Sheet Music Export** - Professional PDF generation via LilyPond
-- **MIDI Synthesis** - High-quality audio preview with FluidSynth
-- **Project Management** - Save, load, and resume transcription projects
+- Windows 10/11
+- NVIDIA GPU (recommended)
+- 8GB RAM minimum
 
-## Installation
+## License
 
-### Prerequisites
-- **Windows 10/11** (Primary platform)
-- **NVIDIA GPU** (Recommended for faster processing)
-- **Git** (for cloning repository)
+MIT License - See LICENSE for details
 
-### One-Click Setup
+## Developer
 
-1. **Clone Repository**
-   ```bash
-   git clone https://github.com/AgentHitmanFaris/NC-AtoScore.git
-   cd NC-AtoScore
-   ```
-
-2. **Run Setup**
-   ```bash
-   setup_local.bat
-   ```
-   
-   This automatically:
-   - Downloads embedded Python 3.11
-   - Installs PyTorch 2.8.0 with CUDA 12.1
-   - Fetches all AI models
-   - Configures system tools (FFmpeg, FluidSynth, LilyPond)
-
-## 🎯 Usage
-
-### Launch Application
-```bash
-run_local.bat
-```
-
-The native UI will open automatically with a clean interface.
-
-### Workflow
-
-1. **Click "📂 Open..."** to select your audio file
-2. **Configure Settings** in the popup dialog:
-   - Choose transcription mode
-   - Enable/disable vocal separation
-   - Set time range (full song or section)
-   - Adjust display settings
-3. **Click "✓ Start Transcription"**
-4. **View Results** in the piano roll and log panel
-5. **Play Back** using the audio mixer
-
-### Transcription Modes Explained
-
-| Mode | Best For | Output | Processing Time |
-|------|----------|--------|----------------|
-| **Lead Sheet** | Pop, Jazz, Standards | Melody + Chords PDF | ~2 min |
-| **Piano** | Solo Piano | Detailed MIDI + Pedals | ~1 min |
-| **Basic Pitch** | All Instruments | Polyphonic MIDI | ~1 min |
-| **Drums** | Drum Tracks | Drum MIDI | ~2 min |
-| **Lunaverus** | Classical Piano | High-Accuracy MIDI | ~1 min |
-
-*Times based on 3-minute song with GTX 1060 GPU*
-
-## 🏗️ Architecture
-
-### Technology Stack
-- **Frontend**: PySide6 (Qt for Python)
-- **Backend**: Python 3.11 Embedded
-- **Audio Processing**: librosa, FFmpeg
-- **AI Models**:
-  - Sheet Sage V2 (Harmony/Structure)
-  - Spotify Basic Pitch (Melody/Polyphony)
-  - Demucs (Vocal Separation)
-  - ByteDance Piano Transcription
-  - Omnizart (Drums)
-  - Lunaverus CNN (Custom Model)
-- **Rendering**: LilyPond (Notation), FluidSynth (Audio)
-
-### Project Structure
-```
-atoscoreV2/
-├── atoscore_Core/          # Core transcription engine
-│   ├── atoscore/           # Python package
-│   ├── scripts/             # Inference scripts
-│   ├── libs/                # Bundled tools (LilyPond, FluidSynth)
-│   └── cache/               # Model cache
-├── atoscore_gui/           # Native Qt application (Restructured)
-├── static/                  # Project assets (banner, etc.)
-│   ├── widgets/             # UI components
-│   ├── workers/             # Background processing
-│   └── resources/           # Styles, icons
-└── static/                  # Web assets (legacy)
-```
-
-## 🐛 Troubleshooting
-
-### Common Issues
-
-**GPU Not Detected**
-- Verify CUDA installation: `nvidia-smi`
-- Check PyTorch: `python -c "import torch; print(torch.cuda.is_available())"`
-
-**Permission Denied Errors**
-- Run as Administrator (Windows)
-- Check antivirus isn't blocking file writes
-
-**Slow Transcription**
-- Ensure GPU mode is enabled
-- Close other GPU-intensive applications
-- Try shorter audio segments first
-
-**Missing Dependencies**
-- Re-run `setup_local.bat`
-- Check internet connection
-- Manual install: `pip install -r atoscore_Core/requirements.txt`
-
-### Recent Fixes (v0.5.0)
-- ✅ **Live MIDI Playback** - Real-time feedback during editing
-- ✅ **Interactive Editing** - Hear notes as you move them
-- ✅ **Improved Stability** - Fixed audio driver and crash issues
-- ✅ **Data Persistence** - Always-on metadata and reliable saving
-
-## 🗺️ Roadmap
-
-- [ ] macOS/Linux support
-- [ ] Real-time transcription (live input)
-- [ ] Batch processing queue
-- [ ] Custom model training UI
-- [ ] Audio effects (reverb, EQ)
-- [ ] Export to MusicXML
-- [ ] Cloud model hosting
-
-## 📝 License
-
-MIT License - See [LICENSE](LICENSE) for details
-
-**Note**: Individual AI models may have separate licenses. Check model documentation for commercial usage restrictions.
-
-## 🙏 Acknowledgments
-
-- **Sheet Sage V2** - Original harmony and structure inference models
-- **Spotify Basic Pitch** - Open-source polyphonic transcription
-- **ByteDance** - Piano transcription research
-- **Facebook/Meta Demucs** - Vocal separation technology
-- **Omnizart** - Multi-instrument transcription framework
-- **LilyPond** - Professional music notation engraving
-- **FluidSynth** - Real-time MIDI synthesis
-
----
-
-**Built with ❤️ by NC-Engineering**
-
----
-
-**Version**: 0.5.0  
-**Last Updated**: December 23, 2025  
-
+NC-Engineering
