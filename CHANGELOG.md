@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to Sheet Sage will be documented in this file.
+All notable changes to NC- AtoScore will be documented in this file.
 
 ## [v0.5.0] - 2025-12-23
 

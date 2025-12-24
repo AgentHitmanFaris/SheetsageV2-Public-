@@ -19,7 +19,7 @@ class MainWindow(QMainWindow):
     
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Sheet Sage V3 - Music Transcription Suite")
+        self.setWindowTitle("NC- AtoScore - Music Transcription Suite")
         self.setMinimumSize(1400, 800)
         
         # Transcription state
@@ -141,7 +141,7 @@ class MainWindow(QMainWindow):
         
         help_menu.addSeparator()
         
-        about_action = QAction("&About Sheet Sage", self)
+        about_action = QAction("&About NC- AtoScore", self)
         about_action.setStatusTip("About this application")
         about_action.triggered.connect(self._on_about)
         help_menu.addAction(about_action)

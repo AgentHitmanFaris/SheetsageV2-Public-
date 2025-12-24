@@ -42,6 +42,9 @@ temp/
 *.log
 .sheetsage/
 omnizart_env/
+temp_projects/
+transcribe_out/
+.antigravity/
 
 
 # Large Files

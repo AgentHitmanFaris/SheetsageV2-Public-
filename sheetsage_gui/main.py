@@ -41,7 +41,7 @@ def setup_logging():
     os.makedirs(log_dir, exist_ok=True)
     
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    log_file = os.path.join(log_dir, f"sheetsage_{timestamp}.log")
+    log_file = os.path.join(log_dir, f"ato_score_{timestamp}.log")
     
     logging.basicConfig(
         level=logging.INFO,
@@ -56,7 +56,7 @@ def setup_logging():
     sys.stdout = StreamToLogger(logging.getLogger('STDOUT'), logging.INFO)
     sys.stderr = StreamToLogger(logging.getLogger('STDERR'), logging.ERROR)
     
-    logging.info("Sheet Sage started")
+    logging.info("NC- AtoScore started")
     logging.info(f"Log file: {log_file}")
 
 from PySide6.QtWidgets import QApplication
@@ -73,7 +73,7 @@ def main():
     app = QApplication(sys.argv)
     
     # Application metadata
-    app.setApplicationName("Sheet Sage")
+    app.setApplicationName("NC- AtoScore")
     app.setOrganizationName("Muhammad Faris Hakim")
     app.setApplicationVersion("3.0.0")
     

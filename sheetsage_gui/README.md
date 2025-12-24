@@ -1,6 +1,6 @@
-# SheetSage Native UI
+# NC- AtoScore Native UI
 
-Native Windows desktop application for SheetSage V3 music transcription suite.
+Native Windows desktop application for NC- AtoScore music transcription suite.
 
 ## Quick Start
 

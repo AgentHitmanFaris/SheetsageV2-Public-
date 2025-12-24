@@ -1,8 +1,8 @@
-# Sheet Sage V3 - Professional Audio Transcription
+# NC- AtoScore - Professional Audio Transcription
 
-![Sheet Sage Logo](ic_logo.png)
+![NC- AtoScore Logo](ic_logo.png)
 
-**Sheet Sage** is a professional AI-powered audio transcription tool that converts music into lead sheets, MIDI files, and sheet music. Built with state-of-the-art machine learning models and featuring a sleek, native desktop interface.
+**NC- AtoScore** is a professional AI-powered audio transcription tool that converts music into lead sheets, MIDI files, and sheet music. Built with state-of-the-art machine learning models and featuring a sleek, native desktop interface.
 
 ## ✨ Key Features
 
